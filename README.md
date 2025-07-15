@@ -260,20 +260,8 @@ The application is designed to be easily deployable to:
 
 ## ⏱️ Time Taken
 
-- **Backend Development**: ~8 hours
-- **Frontend Development**: ~6 hours
-- **ML Pipeline**: ~4 hours
+- **Backend Development**: ~4 hours
+- **Frontend Development**: ~4 hours
 - **Testing & Documentation**: ~2 hours
-- **Total**: ~20 hours
+- **Total**: ~10 hours
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
-
-## 📄 License
-
-MIT License - see LICENSE file for details 
