@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Lightbulb, TrendingUp, CheckCircle, AlertTriangle } from 'lucide-react';
+import { FileText, Lightbulb, TrendingUp, CheckCircle, AlertTriangle, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getSummary } from '../services/api.ts';
 import { SummaryResponse } from '../types/index.ts';
@@ -7,9 +7,10 @@ import { SummaryResponse } from '../types/index.ts';
 interface SummaryProps {
   sessionId: string;
   modelId: string | null;
+  onComplete?: () => void;
 }
 
-const Summary: React.FC<SummaryProps> = ({ sessionId, modelId }) => {
+const Summary: React.FC<SummaryProps> = ({ sessionId, modelId, onComplete }) => {
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,11 +30,11 @@ const Summary: React.FC<SummaryProps> = ({ sessionId, modelId }) => {
     }
   };
 
-
-
-
-
-
+  const handleContinueToAI = () => {
+    if (onComplete) {
+      onComplete();
+    }
+  };
 
   if (isLoading) {
     return (
@@ -138,7 +139,18 @@ const Summary: React.FC<SummaryProps> = ({ sessionId, modelId }) => {
         </div>
       </div>
 
-
+      {/* Continue to AI Analysis */}
+      {onComplete && (
+        <div className="flex justify-center">
+          <button
+            onClick={handleContinueToAI}
+            className="btn-primary flex items-center"
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            Continue to AI Analysis
+          </button>
+        </div>
+      )}
     </div>
   );
 };

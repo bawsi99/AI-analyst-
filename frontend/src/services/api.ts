@@ -7,6 +7,8 @@ import {
   PredictionRequest,
   PredictionResponse,
   SummaryResponse,
+  AIAnalysisResponse,
+  AIAnalysisStatusResponse,
 } from '../types/index.ts';
 import { getAccessToken } from './auth.ts';
 
@@ -81,7 +83,9 @@ export const trainModel = async (
   sessionId: string,
   request: TrainingRequest
 ): Promise<TrainingResponse> => {
-  const response = await api.post(`/train/${sessionId}`, request);
+  const response = await api.post(`/train/${sessionId}`, request, {
+    timeout: 300000, // 5 minutes timeout for model training
+  });
   return response.data;
 };
 
@@ -99,6 +103,20 @@ export const getSummary = async (
 ): Promise<SummaryResponse> => {
   const params = modelId ? { model_id: modelId } : {};
   const response = await api.get(`/summary/${sessionId}`, { params });
+  return response.data;
+};
+
+export const getAIAnalysis = async (
+  sessionId: string,
+  modelId?: string
+): Promise<AIAnalysisResponse> => {
+  const params = modelId ? { model_id: modelId } : {};
+  const response = await api.get(`/ai-analysis/${sessionId}`, { params });
+  return response.data;
+};
+
+export const checkAIAnalysisStatus = async (): Promise<AIAnalysisStatusResponse> => {
+  const response = await api.get('/ai-analysis/status/health');
   return response.data;
 };
 

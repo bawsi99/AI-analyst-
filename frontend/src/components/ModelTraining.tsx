@@ -17,7 +17,7 @@ const ModelTraining: React.FC<ModelTrainingProps> = ({ sessionId, onComplete }) 
   const [trainingResult, setTrainingResult] = useState<TrainingResponse | null>(null);
   
   const [targetColumn, setTargetColumn] = useState('');
-  const [modelType, setModelType] = useState('auto');
+  const [modelType, setModelType] = useState('classification');
   const [algorithm, setAlgorithm] = useState('random_forest');
   const [excludedColumns, setExcludedColumns] = useState<string[]>([]);
 
@@ -72,7 +72,11 @@ const ModelTraining: React.FC<ModelTrainingProps> = ({ sessionId, onComplete }) 
       setTrainingResult(result);
       toast.success('Model trained successfully!');
     } catch (error: any) {
-      toast.error(error.response?.data?.detail || 'Training failed');
+      if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        toast.error('Training timed out. This can happen with large datasets. Please try again or use a smaller dataset.');
+      } else {
+        toast.error(error.response?.data?.detail || 'Training failed');
+      }
     } finally {
       setIsTraining(false);
     }
@@ -171,12 +175,11 @@ const ModelTraining: React.FC<ModelTrainingProps> = ({ sessionId, onComplete }) 
                   onChange={(e) => setModelType(e.target.value)}
                   className="input-field"
                 >
-                  <option value="auto">Auto-detect</option>
                   <option value="classification">Classification</option>
                   <option value="regression">Regression</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Auto-detect will choose based on target column
+                  Choose the type of prediction task
                 </p>
               </div>
 
@@ -292,7 +295,7 @@ const ModelTraining: React.FC<ModelTrainingProps> = ({ sessionId, onComplete }) 
               {isTraining ? (
                 <>
                   <div className="loading-spinner mr-3"></div>
-                  Training Model...
+                  Training Model... (This may take a few minutes)
                 </>
               ) : (
                 <>
@@ -302,6 +305,14 @@ const ModelTraining: React.FC<ModelTrainingProps> = ({ sessionId, onComplete }) 
               )}
             </button>
           </div>
+          
+          {isTraining && (
+            <div className="text-center mt-4">
+              <p className="text-sm text-gray-600">
+                Model training is in progress. Please wait - this can take several minutes for larger datasets.
+              </p>
+            </div>
+          )}
         </div>
       ) : (
         /* Training Results */

@@ -36,12 +36,12 @@ class Settings(BaseSettings):
     S3_BUCKET_NAME: str = ""
     
     # Supabase Configuration
-    SUPABASE_URL: str = "https://edajrfiicoffqgzdkelh.supabase.co"
-    SUPABASE_ANON_KEY: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkYWpyZmlpY29mZnFnemRrZWxoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1NjA4MzcsImV4cCI6MjA2ODEzNjgzN30.mNJT48TejS6qVrg42qs2FrT5mDUeATPNbsfXZUteJBs"
-    SUPABASE_SERVICE_ROLE_KEY: str = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkYWpyZmlpY29mZnFnemRrZWxoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MjU2MDgzNywiZXhwIjoyMDY4MTM2ODM3fQ.e3k7HKT7tYnsbmMSm6z-SIYYSKEcE7AAZHQqoaS2Fb4"
+    SUPABASE_URL: str = ""
+    SUPABASE_ANON_KEY: str = ""
+    SUPABASE_SERVICE_ROLE_KEY: str = ""
     
     # JWT
-    SECRET_KEY: str = "your-secret-key-change-in-production"
+    SECRET_KEY: str = ""
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     RANDOM_STATE: int = 42
     TEST_SIZE: float = 0.2
     MAX_FEATURES: int = 100
+    
+    # Gemini LLM Configuration
+    GEMINI_LLM_API_KEY: str = ""
     
     class Config:
         env_file = ".env"

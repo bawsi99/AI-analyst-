@@ -7,6 +7,7 @@ import AuthLayout from './components/AuthLayout.tsx';
 import Dashboard from './components/Dashboard.tsx';
 import UserDashboard from './components/UserDashboard.tsx';
 import ModelPredictions from './components/ModelPredictions.tsx';
+import ModelDetails from './components/ModelDetails.tsx';
 import About from './components/About.tsx';
 import Header from './components/Header.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
@@ -60,6 +61,21 @@ function App() {
                       <Header />
                       <main className="container mx-auto px-4 py-8">
                         <ModelPredictions />
+                      </main>
+                    </>
+                  </ProtectedRoute>
+                }
+              />
+              
+              {/* Model details */}
+              <Route
+                path="/model/:modelId"
+                element={
+                  <ProtectedRoute>
+                    <>
+                      <Header />
+                      <main className="container mx-auto px-4 py-8">
+                        <ModelDetails />
                       </main>
                     </>
                   </ProtectedRoute>

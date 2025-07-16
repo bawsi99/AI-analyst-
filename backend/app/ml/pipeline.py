@@ -24,16 +24,6 @@ class MLPipeline:
     def __init__(self):
         self.models = {}  # In production, use database
         self.preprocessors = {}
-        
-    def detect_target_type(self, df: pd.DataFrame, target_col: str) -> str:
-        """Detect if target is classification or regression"""
-        target_data = df[target_col]
-        
-        # Check if target is categorical
-        if target_data.dtype == 'object' or target_data.nunique() <= 10:
-            return 'classification'
-        else:
-            return 'regression'
     
     def prepare_features(self, df: pd.DataFrame, target_col: str) -> Tuple[pd.DataFrame, pd.Series]:
         """Prepare features and target"""
@@ -95,7 +85,7 @@ class MLPipeline:
                 # Default to RandomForest
                 return RandomForestRegressor(n_estimators=100, random_state=settings.RANDOM_STATE)
     
-    def train_model(self, df: pd.DataFrame, target_col: str, model_type: str = 'auto', 
+    def train_model(self, df: pd.DataFrame, target_col: str, model_type: str, 
                    algorithm: str = None) -> Dict[str, Any]:
         """Train a machine learning model"""
         start_time = datetime.now()
@@ -103,9 +93,9 @@ class MLPipeline:
         # Clean target column data
         df[target_col] = df[target_col].astype(str).str.strip()
         
-        # Detect model type if auto
-        if model_type == 'auto':
-            model_type = self.detect_target_type(df, target_col)
+        # Validate model_type
+        if model_type not in ['classification', 'regression']:
+            raise ValueError(f"Invalid model_type: {model_type}. Must be 'classification' or 'regression'")
         
         # Prepare data
         X, y = self.prepare_features(df, target_col)

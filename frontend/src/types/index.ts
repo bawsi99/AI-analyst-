@@ -100,12 +100,30 @@ export interface SummaryResponse {
   recommendations: string[];
 }
 
+export interface AIAnalysisResponse {
+  message: string;
+  success: boolean;
+  session_id: string;
+  model_id?: string;
+  ai_analysis: string;
+  enhanced_insights: string[];
+  business_recommendations: string[];
+  technical_recommendations: string[];
+  risk_assessment: string[];
+  opportunities: string[];
+}
+
+export interface AIAnalysisStatusResponse {
+  ai_analysis_available: boolean;
+  message: string;
+}
+
 // Application State Types
 export interface AppState {
   sessionId: string | null;
   modelId: string | null;
   featureNames: string[];
-  currentStep: 'upload' | 'profile' | 'train' | 'predict' | 'summary';
+  currentStep: 'upload' | 'profile' | 'train' | 'predict' | 'summary' | 'ai-analysis';
   isLoading: boolean;
   error: string | null;
 }
@@ -153,4 +171,50 @@ export interface ModelFeaturesResponse {
 export interface SummaryState {
   data: SummaryResponse | null;
   isLoading: boolean;
+}
+
+export interface ModelDetails {
+  model: {
+    id: string;
+    model_id: string;
+    model_type: string;
+    target_column: string;
+    algorithm: string;
+    metrics: any;
+    training_time: number;
+    created_at: string;
+    feature_importance: Record<string, number>;
+    hyperparameters: any;
+    analysis_sessions: {
+      file_name: string;
+      session_id: string;
+    };
+  };
+  predictions: any[];
+  summary?: {
+    data_summary: string;
+    model_summary?: string;
+    key_insights: string[];
+    recommendations: string[];
+  };
+  ai_analysis?: {
+    ai_analysis: string;
+    enhanced_insights: string[];
+    business_recommendations: string[];
+    technical_recommendations: string[];
+    risk_assessment: string[];
+    opportunities: string[];
+  };
+  data_insights?: {
+    outliers: Record<string, any>;
+    skewness: Record<string, number>;
+    correlations: Array<{
+      column1: string;
+      column2: string;
+      correlation: number;
+      strength: string;
+    }>;
+    imbalanced_columns: string[];
+    data_leakage: string[];
+  };
 } 

@@ -34,10 +34,47 @@ class DataService:
     def load_data(self, session_id: str) -> pd.DataFrame:
         """Load data from session"""
         if session_id not in self.sessions:
+            # Try to reconstruct session info from file system
+            self._reconstruct_session_from_file(session_id)
+            
+        if session_id not in self.sessions:
             raise ValueError(f"Session {session_id} not found")
             
         file_path = self.sessions[session_id]['file_path']
         return pd.read_csv(file_path)
+    
+    def _reconstruct_session_from_file(self, session_id: str):
+        """Try to reconstruct session info from file system"""
+        try:
+            # Look for files that start with the session_id
+            upload_dir = settings.UPLOAD_STORAGE_PATH
+            if os.path.exists(upload_dir):
+                for filename in os.listdir(upload_dir):
+                    if filename.startswith(session_id + '_'):
+                        file_path = os.path.join(upload_dir, filename)
+                        if os.path.isfile(file_path):
+                            # Extract original filename
+                            original_filename = filename[len(session_id) + 1:]  # Remove session_id_ prefix
+                            
+                            # Get file stats
+                            file_stats = os.stat(file_path)
+                            
+                            self.sessions[session_id] = {
+                                'filename': original_filename,
+                                'file_path': file_path,
+                                'upload_time': datetime.fromtimestamp(file_stats.st_mtime),
+                                'file_size': file_stats.st_size,
+                                'status': 'uploaded'
+                            }
+                            print(f"Reconstructed session {session_id} from file: {filename}")
+                            return
+                            
+            print(f"Could not find file for session {session_id}")
+                
+        except Exception as e:
+            print(f"Error reconstructing session from file: {e}")
+    
+
     
     def infer_schema(self, df: pd.DataFrame) -> List[ColumnSchema]:
         """Infer schema from DataFrame"""
@@ -252,6 +289,10 @@ class DataService:
     
     def get_session_info(self, session_id: str) -> Dict[str, Any]:
         """Get session information"""
+        if session_id not in self.sessions:
+            # Try to reconstruct session info from file system
+            self._reconstruct_session_from_file(session_id)
+            
         if session_id not in self.sessions:
             raise ValueError(f"Session {session_id} not found")
             

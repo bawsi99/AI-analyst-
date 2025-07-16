@@ -15,7 +15,7 @@ interface UserModel {
   metrics: any;
   created_at: string;
   analysis_sessions: {
-    filename: string;
+    file_name: string;
     session_id: string;
   };
 }
@@ -129,7 +129,7 @@ const ModelPredictions: React.FC = () => {
   };
 
   const filteredModels = models.filter(model =>
-    model.analysis_sessions?.filename?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    model.analysis_sessions?.file_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     model.algorithm.toLowerCase().includes(searchTerm.toLowerCase()) ||
     model.target_column.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -236,7 +236,7 @@ const ModelPredictions: React.FC = () => {
                 >
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="font-medium text-gray-900 truncate">
-                      {model.analysis_sessions?.filename || 'Unknown Dataset'}
+                      {model.analysis_sessions?.file_name || 'Unknown Dataset'}
                     </h4>
                     <span className={`px-2 py-1 text-xs rounded-full ${
                       model.model_type === 'classification' 
@@ -252,11 +252,41 @@ const ModelPredictions: React.FC = () => {
                   <p className="text-sm text-gray-600 mb-2">
                     Algorithm: <span className="font-medium">{model.algorithm}</span>
                   </p>
-                  {model.metrics?.accuracy && (
-                    <p className="text-sm text-gray-600">
-                      Accuracy: <span className="font-medium">{(model.metrics.accuracy * 100).toFixed(1)}%</span>
-                    </p>
-                  )}
+                  {(() => {
+                    const getPrimaryMetric = (model: UserModel) => {
+                      const { model_type, algorithm, metrics } = model;
+                      
+                      if (!metrics) return null;
+                      
+                      if (model_type === 'classification') {
+                        if (algorithm === 'logistic_regression') {
+                          return { value: metrics.precision || 0, label: 'Precision' };
+                        } else if (algorithm === 'xgboost') {
+                          return { value: metrics.f1_score || 0, label: 'F1-Score' };
+                        } else {
+                          return { value: metrics.accuracy || 0, label: 'Accuracy' };
+                        }
+                      } else if (model_type === 'regression') {
+                        return { value: metrics.r2_score || 0, label: 'R² Score' };
+                      }
+                      
+                      return { value: metrics.accuracy || 0, label: 'Accuracy' };
+                    };
+
+                    const formatMetricValue = (value: number, label: string) => {
+                      if (label === 'R² Score' || label === 'RMSE') {
+                        return value.toFixed(3);
+                      }
+                      return (value * 100).toFixed(1) + '%';
+                    };
+
+                    const metric = getPrimaryMetric(model);
+                    return metric ? (
+                      <p className="text-sm text-gray-600">
+                        {metric.label}: <span className="font-medium">{formatMetricValue(metric.value, metric.label)}</span>
+                      </p>
+                    ) : null;
+                  })()}
                 </div>
               ))}
             </div>

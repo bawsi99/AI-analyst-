@@ -183,10 +183,55 @@ async def get_model_details(
             model["id"]
         )
         
+        # Get session information
+        session_id = model.get("text_session_id")
+        summary = None
+        ai_analysis = None
+        data_insights = None
+        
+        if session_id:
+            # Get analysis summary
+            summary = await database_service.get_analysis_summary(session_id, current_user["id"])
+            
+            # Get detailed data insights
+            data_insights = await database_service.get_data_insights(session_id, current_user["id"])
+            
+            # Try to get AI analysis (if available)
+            try:
+                from app.services.ai_analysis_service import ai_analysis_service
+                print(f"Checking AI analysis availability for session {session_id}")
+                if ai_analysis_service.is_available():
+                    print(f"AI analysis service is available, generating analysis...")
+                    ai_analysis = ai_analysis_service.generate_ai_analysis(session_id, model_id)
+                    print(f"AI analysis generated successfully: {bool(ai_analysis)}")
+                else:
+                    print(f"AI analysis service is not available - Gemini API key not configured")
+                    ai_analysis = {
+                        'ai_analysis': "AI analysis is not available. Please configure the Gemini API key in your environment variables.",
+                        'enhanced_insights': [],
+                        'business_recommendations': [],
+                        'technical_recommendations': [],
+                        'risk_assessment': [],
+                        'opportunities': []
+                    }
+            except Exception as e:
+                print(f"AI analysis error: {e}")
+                ai_analysis = {
+                    'ai_analysis': f"Error generating AI analysis: {str(e)}",
+                    'enhanced_insights': [],
+                    'business_recommendations': [],
+                    'technical_recommendations': [],
+                    'risk_assessment': [],
+                    'opportunities': []
+                }
+        
         return {
             "message": "Model details retrieved successfully",
             "model": model,
-            "predictions": predictions[:10]  # Last 10 predictions
+            "predictions": predictions[:10],  # Last 10 predictions
+            "summary": summary,
+            "ai_analysis": ai_analysis,
+            "data_insights": data_insights
         }
     except HTTPException:
         raise
@@ -217,6 +262,9 @@ async def get_model_features(
         excluded_columns = model.get('hyperparameters', {}).get('excluded_columns', [])
         target_column = model['target_column']
         
+        print(f"Model {model_id} - Target column: {target_column}")
+        print(f"Model {model_id} - Excluded columns: {excluded_columns}")
+        
         # Get the session information to access the original data
         # Use the text session_id from the joined table, not the UUID session_id
         text_session_id = model.get("text_session_id") or model.get("analysis_sessions", {}).get("session_id")
@@ -242,7 +290,8 @@ async def get_model_features(
             
             # Filter out the target column and excluded columns, and get feature schema
             for column in profile_data['schema']:
-                if column.name != target_column and column.name not in excluded_columns:
+                if (column.name != target_column and 
+                    column.name not in excluded_columns):
                     features.append({
                         'name': column.name,
                         'dtype': column.dtype,
@@ -251,14 +300,18 @@ async def get_model_features(
                         'null_percentage': column.null_percentage
                     })
             
+            print(f"Model {model_id} - Available features: {[f['name'] for f in features]}")
+            
             return {
                 "message": "Model features retrieved successfully",
                 "model_id": model_id,
                 "target_column": model['target_column'],
+                "excluded_columns": excluded_columns,
                 "features": features
             }
             
         except (ValueError, FileNotFoundError, Exception) as e:
+            print(f"Error getting features from data service: {e}")
             # Fallback: return basic feature information from feature importance
             feature_importance = model.get('feature_importance', {})
             
@@ -283,21 +336,18 @@ async def get_model_features(
                         seen_names.add(feature['name'])
                 
                 return {
-                    "message": "Model features retrieved successfully (fallback from feature importance)",
+                    "message": "Model features retrieved successfully (fallback)",
                     "model_id": model_id,
                     "target_column": model['target_column'],
+                    "excluded_columns": excluded_columns,
                     "features": unique_features
                 }
             else:
-                # If no feature importance available, return basic model info
-                return {
-                    "message": "Model features retrieved successfully (basic info only)",
-                    "model_id": model_id,
-                    "target_column": model['target_column'],
-                    "features": [],
-                    "note": "Feature details not available. Use the model for predictions with appropriate input data."
-                }
-        
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Could not retrieve feature information for this model"
+                )
+                
     except HTTPException:
         raise
     except Exception as e:

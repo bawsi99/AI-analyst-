@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from app.models.schemas import TrainingRequest, TrainingResponse
 from app.services.data_service import data_service
 from app.services.database_service import database_service
+from app.services.summary_service import summary_service
 from app.ml.pipeline import ml_pipeline
 from app.core.auth import get_current_user
 from typing import Dict, Any
@@ -17,17 +18,18 @@ async def train_model(session_id: str, request: TrainingRequest, current_user: D
     
     - **session_id**: Session ID from upload endpoint
     - **target_column**: Column to predict
-    - **model_type**: auto, classification, or regression
+    - **model_type**: classification or regression
     - **algorithm**: random_forest, xgboost, logistic_regression (optional)
     """
     try:
-        # Get session info from database first
-        print(f"DEBUG: Looking up session in DB with session_id={session_id}, user_id={current_user['id']}")
+        # Validate model_type
+        if request.model_type not in ['classification', 'regression']:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid model_type: {request.model_type}. Must be 'classification' or 'regression'"
+            )
         
-        # Debug: Get all sessions for this user
-        all_sessions = await database_service.get_user_sessions(current_user["id"])
-        print(f"DEBUG: All sessions for user: {all_sessions}")
-        
+        # Get session info
         session_info = await database_service.get_session_by_id(session_id, current_user["id"])
         if not session_info:
             raise HTTPException(
@@ -35,31 +37,8 @@ async def train_model(session_id: str, request: TrainingRequest, current_user: D
                 detail="Session not found"
             )
         
-        # Try to load data from data service (in-memory)
-        try:
-            df = data_service.load_data(session_id)
-        except ValueError as e:
-            # If session not in memory, try to load from file path
-            file_path = session_info.get('file_path')
-            if not file_path or not os.path.exists(file_path):
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Session data file not found"
-                )
-            df = pd.read_csv(file_path)
-        
-        # Remove excluded columns if specified
-        if request.excluded_columns:
-            # Validate excluded columns exist
-            invalid_excluded = [col for col in request.excluded_columns if col not in df.columns]
-            if invalid_excluded:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Excluded columns not found in dataset: {', '.join(invalid_excluded)}"
-                )
-            
-            # Remove excluded columns
-            df = df.drop(columns=request.excluded_columns)
+        # Load data
+        df = data_service.load_data(session_id)
         
         # Validate target column
         if request.target_column not in df.columns:
@@ -67,6 +46,17 @@ async def train_model(session_id: str, request: TrainingRequest, current_user: D
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Target column '{request.target_column}' not found in dataset"
             )
+        
+        # Remove excluded columns before training
+        excluded_columns = request.excluded_columns or []
+        columns_to_remove = []
+        for col in excluded_columns:
+            if col in df.columns:
+                columns_to_remove.append(col)
+        
+        if columns_to_remove:
+            df = df.drop(columns=columns_to_remove)
+            print(f"Removed columns during training: {columns_to_remove}")
         
         # Check for sufficient data
         if len(df) < 5:
@@ -76,7 +66,7 @@ async def train_model(session_id: str, request: TrainingRequest, current_user: D
             )
         
         # Check target column distribution for classification
-        if request.model_type == 'classification' or request.model_type == 'auto':
+        if request.model_type == 'classification':
             target_counts = df[request.target_column].value_counts()
             if len(target_counts) < 2:
                 raise HTTPException(
@@ -98,7 +88,7 @@ async def train_model(session_id: str, request: TrainingRequest, current_user: D
                 detail=f"Target column has {missing_target} missing values"
             )
         
-        # Train model
+        # Train model with cleaned data (excluded columns already removed)
         training_result = ml_pipeline.train_model(
             df=df,
             target_col=request.target_column,
@@ -127,6 +117,44 @@ async def train_model(session_id: str, request: TrainingRequest, current_user: D
             session_id=session_info["session_id"],
             model_data=model_data
         )
+        
+        # Generate and save summary and data insights
+        try:
+            # Generate complete summary including model summary
+            summary_data = summary_service.generate_complete_summary(session_id, training_result['model_id'])
+            
+            # Save analysis summary to database
+            await database_service.save_analysis_summary(
+                user_id=current_user["id"],
+                session_id=session_id,
+                summary_data=summary_data,
+                model_id=training_result['model_id']
+            )
+            
+            # Generate and save data insights
+            profile_data = data_service.profile_data(session_id)
+            insights_data = {
+                'outliers': profile_data['insights'].outliers,
+                'skewness': profile_data['insights'].skewness,
+                'correlations': [
+                    {
+                        'column1': corr.column1,
+                        'column2': corr.column2,
+                        'correlation': corr.correlation,
+                        'strength': corr.strength
+                    } for corr in profile_data['insights'].correlations
+                ],
+                'imbalanced_columns': profile_data['insights'].imbalanced_columns,
+                'data_leakage': profile_data['insights'].data_leakage
+            }
+            
+            await database_service.save_data_insights(session_id, current_user["id"], insights_data)
+            
+            print(f"Summary and data insights saved for model {training_result['model_id']}")
+            
+        except Exception as e:
+            print(f"Warning: Failed to save summary and data insights: {e}")
+            # Continue with training response even if summary saving fails
         
         # Update session status
         await database_service.update_session_status(

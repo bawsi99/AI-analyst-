@@ -126,6 +126,43 @@ class DatabaseService:
             print(f"Error updating session status: {e}")
             return False
     
+    async def save_data_insights(self, session_id: str, user_id: str, insights_data: Dict[str, Any]) -> bool:
+        """Save detailed data insights to session metadata"""
+        try:
+            # Get current session metadata
+            session_info = await self.get_session_by_id(session_id, user_id)
+            if not session_info:
+                raise ValueError(f"Session with session_id {session_id} not found")
+            
+            current_metadata = session_info.get('metadata', {})
+            
+            # Add insights data to metadata
+            current_metadata['data_insights'] = insights_data
+            
+            # Update session with new metadata
+            self.supabase.table('analysis_sessions').update({
+                'metadata': current_metadata,
+                'status': 'profiled'
+            }).eq('session_id', session_id).eq('user_id', user_id).execute()
+            
+            return True
+        except Exception as e:
+            print(f"Error saving data insights: {e}")
+            return False
+    
+    async def get_data_insights(self, session_id: str, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get detailed data insights from session metadata"""
+        try:
+            session_info = await self.get_session_by_id(session_id, user_id)
+            if not session_info:
+                return None
+            
+            metadata = session_info.get('metadata', {})
+            return metadata.get('data_insights')
+        except Exception as e:
+            print(f"Error getting data insights: {e}")
+            return None
+    
     # Trained Models Operations
     async def create_trained_model(self, user_id: str, session_id: str, model_data: Dict[str, Any]) -> str:
         """Create a new trained model record"""

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Brain, Plus, BarChart3, TrendingUp, Clock, FileText, Upload, Users, Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext.tsx';
-import { getUserStats, getUserModels, getUserSessions } from '../services/api.ts';
+import { getUserStats, getUserModels } from '../services/api.ts';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
@@ -22,26 +22,20 @@ interface UserModel {
   metrics: any;
   created_at: string;
   analysis_sessions: {
-    filename: string;
+    file_name: string;
     session_id: string;
   };
 }
 
-interface UserSession {
-  id: string;
-  session_id: string;
-  filename: string;
-  status: string;
-  created_at: string;
-}
+
 
 const UserDashboard: React.FC = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [models, setModels] = useState<UserModel[]>([]);
-  const [sessions, setSessions] = useState<UserSession[]>([]);
+
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'models' | 'sessions'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'models'>('overview');
 
   useEffect(() => {
     loadDashboardData();
@@ -50,15 +44,13 @@ const UserDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       setIsLoading(true);
-      const [statsData, modelsData, sessionsData] = await Promise.all([
+      const [statsData, modelsData] = await Promise.all([
         getUserStats(),
-        getUserModels(),
-        getUserSessions()
+        getUserModels()
       ]);
       
       setStats(statsData.stats);
       setModels(modelsData.models);
-      setSessions(sessionsData.sessions);
     } catch (error: any) {
       toast.error('Failed to load dashboard data');
       console.error('Dashboard load error:', error);
@@ -77,14 +69,63 @@ const UserDashboard: React.FC = () => {
     });
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'trained': return 'bg-blue-100 text-blue-800';
-      case 'profiled': return 'bg-yellow-100 text-yellow-800';
-      case 'uploaded': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+
+
+  const getPrimaryMetric = (model: UserModel) => {
+    const { model_type, algorithm, metrics } = model;
+    
+    if (!metrics) return { value: 0, label: 'N/A', color: 'text-gray-600' };
+    
+    // For classification models
+    if (model_type === 'classification') {
+      // For logistic regression, precision is often more important than accuracy
+      if (algorithm === 'logistic_regression') {
+        return {
+          value: metrics.precision || 0,
+          label: 'Precision',
+          color: 'text-green-600'
+        };
+      }
+      // For XGBoost, F1-score is often the best metric
+      else if (algorithm === 'xgboost') {
+        return {
+          value: metrics.f1_score || 0,
+          label: 'F1-Score',
+          color: 'text-purple-600'
+        };
+      }
+      // For Random Forest, accuracy is fine
+      else {
+        return {
+          value: metrics.accuracy || 0,
+          label: 'Accuracy',
+          color: 'text-blue-600'
+        };
+      }
     }
+    // For regression models
+    else if (model_type === 'regression') {
+      // R² score is generally more interpretable than RMSE
+      return {
+        value: metrics.r2_score || 0,
+        label: 'R² Score',
+        color: 'text-orange-600'
+      };
+    }
+    
+    // Fallback
+    return {
+      value: metrics.accuracy || 0,
+      label: 'Accuracy',
+      color: 'text-gray-600'
+    };
+  };
+
+  const formatMetricValue = (value: number, label: string) => {
+    if (label === 'R² Score' || label === 'RMSE') {
+      return value.toFixed(3);
+    }
+    return (value * 100).toFixed(1) + '%';
   };
 
   if (isLoading) {
@@ -184,16 +225,7 @@ const UserDashboard: React.FC = () => {
             >
               My Models ({models.length})
             </button>
-            <button
-              onClick={() => setActiveTab('sessions')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                activeTab === 'sessions'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              Sessions ({sessions.length})
-            </button>
+
           </nav>
         </div>
 
@@ -221,9 +253,14 @@ const UserDashboard: React.FC = () => {
                         </div>
                         <div className="text-right">
                           <p className="text-sm text-gray-500">{formatDate(model.created_at)}</p>
-                          <p className="text-sm font-medium text-green-600">
-                            {(model.metrics?.accuracy * 100).toFixed(1)}% accuracy
-                          </p>
+                          {(() => {
+                            const metric = getPrimaryMetric(model);
+                            return (
+                              <p className={`text-sm font-medium ${metric.color}`}>
+                                {formatMetricValue(metric.value, metric.label)} {metric.label}
+                              </p>
+                            );
+                          })()}
                         </div>
                       </div>
                     ))}
@@ -239,36 +276,7 @@ const UserDashboard: React.FC = () => {
                 )}
               </div>
 
-              {/* Recent Sessions */}
-              <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Sessions</h3>
-                {sessions.slice(0, 5).length > 0 ? (
-                  <div className="space-y-3">
-                    {sessions.slice(0, 5).map((session) => (
-                      <div key={session.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <FileText className="h-5 w-5 text-blue-600" />
-                          <div>
-                            <p className="font-medium text-gray-900">{session.filename}</p>
-                            <p className="text-sm text-gray-500">Session {session.session_id}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-500">{formatDate(session.created_at)}</p>
-                          <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(session.status)}`}>
-                            {session.status}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8">
-                    <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500">No analysis sessions yet.</p>
-                  </div>
-                )}
-              </div>
+
             </div>
           )}
 
@@ -300,9 +308,17 @@ const UserDashboard: React.FC = () => {
                         </div>
                         <div className="text-right">
                           <p className="text-sm text-gray-500">{formatDate(model.created_at)}</p>
-                          <p className="text-lg font-bold text-green-600">
-                            {(model.metrics?.accuracy * 100).toFixed(1)}%
-                          </p>
+                          {(() => {
+                            const metric = getPrimaryMetric(model);
+                            return (
+                              <div>
+                                <p className={`text-lg font-bold ${metric.color}`}>
+                                  {formatMetricValue(metric.value, metric.label)}
+                                </p>
+                                <p className="text-xs text-gray-500">{metric.label}</p>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                       
@@ -341,10 +357,13 @@ const UserDashboard: React.FC = () => {
                           <TrendingUp className="h-4 w-4 mr-2" />
                           Make Predictions
                         </Link>
-                        <button className="btn-secondary">
+                        <Link
+                          to={`/model/${model.model_id}`}
+                          className="btn-secondary"
+                        >
                           <BarChart3 className="h-4 w-4 mr-2" />
                           View Details
-                        </button>
+                        </Link>
                       </div>
                     </div>
                   ))}
@@ -363,65 +382,7 @@ const UserDashboard: React.FC = () => {
             </div>
           )}
 
-          {activeTab === 'sessions' && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-medium text-gray-900">All Sessions</h3>
-                <Link to="/new-analysis" className="btn-secondary">
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Session
-                </Link>
-              </div>
-              
-              {sessions.length > 0 ? (
-                <div className="space-y-4">
-                  {sessions.map((session) => (
-                    <div key={session.id} className="border border-gray-200 rounded-lg p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <FileText className="h-6 w-6 text-blue-600" />
-                          <div>
-                            <h4 className="text-lg font-medium text-gray-900">{session.filename}</h4>
-                            <p className="text-sm text-gray-500">Session ID: {session.session_id}</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-500">{formatDate(session.created_at)}</p>
-                          <span className={`inline-flex px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(session.status)}`}>
-                            {session.status}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 flex space-x-3">
-                        <Link
-                          to={`/session/${session.session_id}`}
-                          className="btn-primary flex-1 text-center"
-                        >
-                          <BarChart3 className="h-4 w-4 mr-2" />
-                          View Analysis
-                        </Link>
-                        <button className="btn-secondary">
-                          <Clock className="h-4 w-4 mr-2" />
-                          Continue
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No sessions yet</h3>
-                  <p className="text-gray-500 mb-6">Start your first data analysis session.</p>
-                  <Link to="/new-analysis" className="btn-primary">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Data
-                  </Link>
-                </div>
-              )}
-            </div>
-          )}
+
         </div>
       </div>
     </div>

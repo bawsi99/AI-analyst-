@@ -4,6 +4,7 @@ from app.ml.pipeline import ml_pipeline
 from app.services.database_service import database_service
 from app.core.auth import get_current_user
 from typing import Dict, Any
+import pandas as pd
 
 router = APIRouter()
 
@@ -42,23 +43,31 @@ async def predict(model_id: str, request: PredictionRequest, current_user: Dict[
                 detail="Model not found"
             )
         
-        # Apply the same excluded columns that were used during training
-        excluded_columns = model_info.get('hyperparameters', {}).get('excluded_columns', [])
-        if excluded_columns:
-            # Convert input data to DataFrame for easier column manipulation
-            import pandas as pd
-            df = pd.DataFrame(request.data)
-            
-            # Remove excluded columns if they exist in the data
-            columns_to_remove = [col for col in excluded_columns if col in df.columns]
-            if columns_to_remove:
-                df = df.drop(columns=columns_to_remove)
-                print(f"Removed excluded columns: {columns_to_remove}")
-            
-            # Convert back to list of dictionaries
-            processed_data = df.to_dict('records')
-        else:
-            processed_data = request.data
+        # Convert input data to DataFrame for easier manipulation
+        df = pd.DataFrame(request.data)
+        input_columns = set(df.columns)
+        
+        # Get target column from model info
+        target_column = model_info.get('target_column')
+        
+        # Remove target column if it exists in the data (excluded columns should already be excluded during training)
+        if target_column in df.columns:
+            df = df.drop(columns=[target_column])
+            print(f"Removed target column: {target_column}")
+        
+        # Check if we have any data left
+        if df.empty:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No valid features remaining after removing target column"
+            )
+        
+        # Convert back to list of dictionaries
+        processed_data = df.to_dict('records')
+        
+        print(f"Input columns: {input_columns}")
+        print(f"Target column: {target_column}")
+        print(f"Final columns: {list(df.columns)}")
         
         # Make predictions
         prediction_result = ml_pipeline.predict(model_id, processed_data)
@@ -95,6 +104,7 @@ async def predict(model_id: str, request: PredictionRequest, current_user: Dict[
     except HTTPException:
         raise
     except Exception as e:
+        print(f"Prediction error: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error making predictions: {str(e)}"
