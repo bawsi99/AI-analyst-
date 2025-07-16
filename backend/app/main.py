@@ -40,7 +40,16 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "service": "ai-analyst-api"}
+    from app.services.redis_service import redis_service
+    
+    # Check Redis health
+    redis_healthy = redis_service.health_check()
+    
+    return {
+        "status": "healthy" if redis_healthy else "degraded",
+        "service": "ai-analyst-api",
+        "redis": "healthy" if redis_healthy else "unhealthy"
+    }
 
 if __name__ == "__main__":
     import uvicorn

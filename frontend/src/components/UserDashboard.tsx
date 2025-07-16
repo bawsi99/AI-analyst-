@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Brain, Plus, BarChart3, TrendingUp, Clock, FileText, Upload, Users, Activity } from 'lucide-react';
+import { Brain, Plus, BarChart3, TrendingUp, FileText, Upload, Activity } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { getUserStats, getUserModels } from '../services/api.ts';
 import toast from 'react-hot-toast';

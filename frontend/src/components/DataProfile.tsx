@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BarChart3, TrendingUp, AlertTriangle, CheckCircle, ArrowRight } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import toast from 'react-hot-toast';
 import { getProfile } from '../services/api.ts';
 import { ProfileResponse } from '../types/index.ts';
@@ -15,11 +15,7 @@ const DataProfile: React.FC<DataProfileProps> = ({ sessionId, onComplete }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'schema' | 'insights'>('overview');
 
-  useEffect(() => {
-    loadProfile();
-  }, [sessionId]);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await getProfile(sessionId);
@@ -29,7 +25,11 @@ const DataProfile: React.FC<DataProfileProps> = ({ sessionId, onComplete }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [sessionId]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   if (isLoading) {
     return (

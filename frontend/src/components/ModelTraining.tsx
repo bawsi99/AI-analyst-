@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Brain, Settings, TrendingUp, ArrowRight, CheckCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Brain, Settings, ArrowRight, TrendingUp, CheckCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import toast from 'react-hot-toast';
 import { getProfile, trainModel } from '../services/api.ts';
 import { ProfileResponse, TrainingRequest, TrainingResponse } from '../types/index.ts';
+import toast from 'react-hot-toast';
 
 interface ModelTrainingProps {
   sessionId: string;
@@ -12,20 +12,15 @@ interface ModelTrainingProps {
 
 const ModelTraining: React.FC<ModelTrainingProps> = ({ sessionId, onComplete }) => {
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isTraining, setIsTraining] = useState(false);
   const [trainingResult, setTrainingResult] = useState<TrainingResponse | null>(null);
-  
   const [targetColumn, setTargetColumn] = useState('');
   const [modelType, setModelType] = useState('classification');
   const [algorithm, setAlgorithm] = useState('random_forest');
   const [excludedColumns, setExcludedColumns] = useState<string[]>([]);
 
-  useEffect(() => {
-    loadProfile();
-  }, [sessionId]);
-
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await getProfile(sessionId);
@@ -51,7 +46,11 @@ const ModelTraining: React.FC<ModelTrainingProps> = ({ sessionId, onComplete }) 
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [sessionId]);
+
+  useEffect(() => {
+    loadProfile();
+  }, [loadProfile]);
 
   const handleTrain = async () => {
     if (!targetColumn) {

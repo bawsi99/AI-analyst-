@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FileText, Lightbulb, TrendingUp, CheckCircle, AlertTriangle, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getSummary } from '../services/api.ts';
@@ -14,11 +14,7 @@ const Summary: React.FC<SummaryProps> = ({ sessionId, modelId, onComplete }) => 
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    loadSummary();
-  }, [sessionId, modelId]);
-
-  const loadSummary = async () => {
+  const loadSummary = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await getSummary(sessionId, modelId || undefined);
@@ -28,7 +24,11 @@ const Summary: React.FC<SummaryProps> = ({ sessionId, modelId, onComplete }) => 
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [sessionId, modelId]);
+
+  useEffect(() => {
+    loadSummary();
+  }, [loadSummary]);
 
   const handleContinueToAI = () => {
     if (onComplete) {

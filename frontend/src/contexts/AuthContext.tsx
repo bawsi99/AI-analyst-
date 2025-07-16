@@ -57,7 +57,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const response = await authLogin({ email, password });
+      await authLogin({ email, password });
       
       // Fetch user profile
       const profile = await getProfile();
@@ -87,7 +87,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const register = async (email: string, password: string, fullName?: string) => {
     try {
       setIsLoading(true);
-      const response = await authRegister({ email, password, full_name: fullName });
+      await authRegister({ email, password, full_name: fullName });
       
       // Fetch user profile
       const profile = await getProfile();

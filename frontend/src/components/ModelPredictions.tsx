@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Brain, ArrowRight, Plus, Trash2, Search } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext.tsx';
+import { TrendingUp, Brain, Plus, Trash2, Search } from 'lucide-react';
 import { getUserModels, makePrediction, getModelFeatures } from '../services/api.ts';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
@@ -21,7 +20,6 @@ interface UserModel {
 }
 
 const ModelPredictions: React.FC = () => {
-  const { user } = useAuth();
   const [models, setModels] = useState<UserModel[]>([]);
   const [selectedModel, setSelectedModel] = useState<UserModel | null>(null);
   const [modelFeatures, setModelFeatures] = useState<ModelFeature[]>([]);

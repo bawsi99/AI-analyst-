@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TrendingUp, ArrowRight, Plus, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { makePrediction, getModelFeatures } from '../services/api.ts';
@@ -19,11 +19,7 @@ const Predictions: React.FC<PredictionsProps> = ({ modelId, featureNames, onComp
   const [isPredicting, setIsPredicting] = useState(false);
   const [predictionResult, setPredictionResult] = useState<PredictionResponse | null>(null);
 
-  useEffect(() => {
-    loadModelFeatures();
-  }, [modelId]);
-
-  const loadModelFeatures = async () => {
+  const loadModelFeatures = useCallback(async () => {
     try {
       setIsLoadingFeatures(true);
       const response = await getModelFeatures(modelId);
@@ -41,7 +37,11 @@ const Predictions: React.FC<PredictionsProps> = ({ modelId, featureNames, onComp
     } finally {
       setIsLoadingFeatures(false);
     }
-  };
+  }, [modelId, featureNames]);
+
+  useEffect(() => {
+    loadModelFeatures();
+  }, [loadModelFeatures]);
 
   const handleAddRow = () => {
     if (modelFeatures.length > 0) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Brain, Briefcase, Wrench, AlertTriangle, Target, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAIAnalysis, checkAIAnalysisStatus } from '../services/api.ts';
@@ -15,17 +15,7 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ sessionId, modelId }) => {
   const [isAvailable, setIsAvailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    checkAvailability();
-  }, []);
-
-  useEffect(() => {
-    if (isAvailable) {
-      loadAIAnalysis();
-    }
-  }, [sessionId, modelId, isAvailable]);
-
-  const checkAvailability = async () => {
+  const checkAvailability = useCallback(async () => {
     try {
       const status = await checkAIAnalysisStatus();
       setIsAvailable(status.ai_analysis_available);
@@ -37,9 +27,9 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ sessionId, modelId }) => {
       setError('Failed to check AI analysis availability');
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const loadAIAnalysis = async () => {
+  const loadAIAnalysis = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -52,7 +42,17 @@ const AIAnalysis: React.FC<AIAnalysisProps> = ({ sessionId, modelId }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [sessionId, modelId]);
+
+  useEffect(() => {
+    checkAvailability();
+  }, [checkAvailability]);
+
+  useEffect(() => {
+    if (isAvailable) {
+      loadAIAnalysis();
+    }
+  }, [isAvailable, loadAIAnalysis]);
 
   if (isLoading) {
     return (

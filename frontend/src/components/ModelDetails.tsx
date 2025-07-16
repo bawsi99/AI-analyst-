@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { Brain, TrendingUp, BarChart3, Clock, FileText, ArrowLeft, Download, Share2 } from 'lucide-react';
+import { Brain, TrendingUp, BarChart3, Clock, FileText, ArrowLeft } from 'lucide-react';
 import { getModelDetails } from '../services/api.ts';
 import toast from 'react-hot-toast';
 
-interface ModelDetails {
+interface ModelDetailsData {
   model: {
     id: string;
     model_id: string;
@@ -53,16 +53,10 @@ interface ModelDetails {
 const ModelDetails: React.FC = () => {
   const { modelId } = useParams<{ modelId: string }>();
   const navigate = useNavigate();
-  const [modelDetails, setModelDetails] = useState<ModelDetails | null>(null);
+  const [modelDetails, setModelDetails] = useState<ModelDetailsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (modelId) {
-      loadModelDetails();
-    }
-  }, [modelId]);
-
-  const loadModelDetails = async () => {
+  const loadModelDetails = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await getModelDetails(modelId!);
@@ -77,7 +71,13 @@ const ModelDetails: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [modelId]);
+
+  useEffect(() => {
+    if (modelId) {
+      loadModelDetails();
+    }
+  }, [modelId, loadModelDetails]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

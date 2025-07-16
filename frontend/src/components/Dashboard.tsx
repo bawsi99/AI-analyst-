@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Upload, BarChart3, Brain, TrendingUp, FileText, Sparkles } from 'lucide-react';
 import toast from 'react-hot-toast';
 import FileUpload from './FileUpload.tsx';
