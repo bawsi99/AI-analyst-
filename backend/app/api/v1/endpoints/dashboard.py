@@ -1,5 +1,241 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, Query
+from typing import Dict, Any, List, Optional
+from app.core.auth import get_current_user
+from app.services.database_service import database_service
 
 router = APIRouter()
 
-# TODO: Implement dashboard endpoints
+@router.get("/stats")
+async def get_dashboard_stats(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Get dashboard statistics for the current user.
+    
+    Returns:
+    - total_sessions: Number of analysis sessions
+    - total_models: Number of trained models
+    - total_predictions: Number of predictions made
+    - recent_sessions: List of recent sessions
+    - recent_models: List of recent models
+    """
+    try:
+        stats = await database_service.get_dashboard_stats(current_user["id"])
+        return {
+            "message": "Dashboard stats retrieved successfully",
+            "success": True,
+            "stats": stats
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get dashboard stats: {str(e)}")
+
+@router.get("/models")
+async def get_user_models(
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Get user's trained models with pagination.
+    
+    Args:
+    - limit: Number of models to return (max 100)
+    - offset: Number of models to skip
+    
+    Returns:
+    - models: List of trained models
+    - total: Total number of models
+    """
+    try:
+        models = await database_service.get_user_models(current_user["id"])
+        
+        # Apply pagination
+        total = len(models)
+        paginated_models = models[offset:offset + limit]
+        
+        return {
+            "message": "User models retrieved successfully",
+            "success": True,
+            "models": paginated_models,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get user models: {str(e)}")
+
+@router.get("/sessions")
+async def get_user_sessions(
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Get user's analysis sessions with pagination.
+    
+    Args:
+    - limit: Number of sessions to return (max 100)
+    - offset: Number of sessions to skip
+    
+    Returns:
+    - sessions: List of analysis sessions
+    - total: Total number of sessions
+    """
+    try:
+        sessions = await database_service.get_user_sessions(current_user["id"])
+        
+        # Apply pagination
+        total = len(sessions)
+        paginated_sessions = sessions[offset:offset + limit]
+        
+        return {
+            "message": "User sessions retrieved successfully",
+            "success": True,
+            "sessions": paginated_sessions,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get user sessions: {str(e)}")
+
+@router.get("/predictions")
+async def get_prediction_history(
+    model_id: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Get user's prediction history with optional model filtering and pagination.
+    
+    Args:
+    - model_id: Optional model ID to filter predictions
+    - limit: Number of predictions to return (max 100)
+    - offset: Number of predictions to skip
+    
+    Returns:
+    - predictions: List of predictions
+    - total: Total number of predictions
+    """
+    try:
+        predictions = await database_service.get_prediction_history(current_user["id"], model_id)
+        
+        # Apply pagination
+        total = len(predictions)
+        paginated_predictions = predictions[offset:offset + limit]
+        
+        return {
+            "message": "Prediction history retrieved successfully",
+            "success": True,
+            "predictions": paginated_predictions,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get prediction history: {str(e)}")
+
+@router.get("/sessions/{session_id}")
+async def get_session_details(
+    session_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Get detailed information about a specific analysis session.
+    
+    Args:
+    - session_id: The session ID to retrieve
+    
+    Returns:
+    - session: Detailed session information
+    """
+    try:
+        session = await database_service.get_session_by_id(session_id, current_user["id"])
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        return {
+            "message": "Session details retrieved successfully",
+            "success": True,
+            "session": session
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get session details: {str(e)}")
+
+@router.get("/models/{model_id}")
+async def get_model_details(
+    model_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Get detailed information about a specific trained model.
+    
+    Args:
+    - model_id: The model ID to retrieve
+    
+    Returns:
+    - model: Detailed model information
+    """
+    try:
+        model = await database_service.get_model_by_id(model_id, current_user["id"])
+        if not model:
+            raise HTTPException(status_code=404, detail="Model not found")
+        
+        return {
+            "message": "Model details retrieved successfully",
+            "success": True,
+            "model": model
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get model details: {str(e)}")
+
+@router.get("/models/{model_id}/features")
+async def get_model_features(
+    model_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Get feature information for a specific trained model.
+    
+    Args:
+    - model_id: The model ID to retrieve features for
+    
+    Returns:
+    - features: Model feature information
+    """
+    try:
+        model = await database_service.get_model_by_id(model_id, current_user["id"])
+        if not model:
+            raise HTTPException(status_code=404, detail="Model not found")
+        
+        # Extract feature importance from model data
+        feature_importance = model.get('feature_importance', {})
+        
+        # Convert to list format for easier frontend consumption
+        features = [
+            {
+                "name": feature_name,
+                "importance": importance,
+                "rank": rank + 1
+            }
+            for rank, (feature_name, importance) in enumerate(
+                sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)
+            )
+        ]
+        
+        return {
+            "message": "Model features retrieved successfully",
+            "success": True,
+            "model_id": model_id,
+            "target_column": model.get('target_column', ''),
+            "features": features
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get model features: {str(e)}")
