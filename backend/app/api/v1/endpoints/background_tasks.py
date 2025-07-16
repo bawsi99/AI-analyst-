@@ -22,7 +22,6 @@ async def train_model_background(
     request: dict, 
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    from app.models.schemas import TrainingRequest, BackgroundTaskResponse
     """
     Start background ML model training task.
     
@@ -71,12 +70,12 @@ async def train_model_background(
             metadata={'task_id': task.id}
         )
         
-        return BackgroundTaskResponse(
-            message="Model training started in background",
-            task_id=task.id,
-            task_type="model_training",
-            session_id=session_id
-        )
+        return {
+            "message": "Model training started in background",
+            "task_id": task.id,
+            "task_type": "model_training",
+            "session_id": session_id
+        }
         
     except HTTPException:
         raise
@@ -92,7 +91,6 @@ async def generate_ai_analysis_background(
     model_id: str = None,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    from app.models.schemas import BackgroundTaskResponse
     """
     Start background AI analysis task using Gemini LLM.
     
@@ -116,12 +114,12 @@ async def generate_ai_analysis_background(
             model_id=model_id
         )
         
-        return BackgroundTaskResponse(
-            message="AI analysis started in background",
-            task_id=task.id,
-            task_type="ai_analysis",
-            session_id=session_id
-        )
+        return {
+            "message": "AI analysis started in background",
+            "task_id": task.id,
+            "task_type": "ai_analysis",
+            "session_id": session_id
+        }
         
     except Exception as e:
         raise HTTPException(
@@ -134,7 +132,6 @@ async def profile_data_background(
     session_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    from app.models.schemas import BackgroundTaskResponse
     """
     Start background data profiling task.
     
@@ -156,12 +153,12 @@ async def profile_data_background(
             user_id=current_user["id"]
         )
         
-        return BackgroundTaskResponse(
-            message="Data profiling started in background",
-            task_id=task.id,
-            task_type="data_profiling",
-            session_id=session_id
-        )
+        return {
+            "message": "Data profiling started in background",
+            "task_id": task.id,
+            "task_type": "data_profiling",
+            "session_id": session_id
+        }
         
     except Exception as e:
         raise HTTPException(
@@ -175,7 +172,6 @@ async def batch_predict_background(
     data: List[Dict[str, Any]],
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    from app.models.schemas import BackgroundTaskResponse
     """
     Start background batch prediction task.
     
@@ -199,12 +195,12 @@ async def batch_predict_background(
             data=data
         )
         
-        return BackgroundTaskResponse(
-            message="Batch prediction started in background",
-            task_id=task.id,
-            task_type="batch_prediction",
-            model_id=model_id
-        )
+        return {
+            "message": "Batch prediction started in background",
+            "task_id": task.id,
+            "task_type": "batch_prediction",
+            "model_id": model_id
+        }
         
     except Exception as e:
         raise HTTPException(
@@ -218,7 +214,6 @@ async def generate_summary_background(
     model_id: str = None,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    from app.models.schemas import BackgroundTaskResponse
     """
     Start background summary generation task.
     
@@ -242,12 +237,12 @@ async def generate_summary_background(
             model_id=model_id
         )
         
-        return BackgroundTaskResponse(
-            message="Summary generation started in background",
-            task_id=task.id,
-            task_type="summary_generation",
-            session_id=session_id
-        )
+        return {
+            "message": "Summary generation started in background",
+            "task_id": task.id,
+            "task_type": "summary_generation",
+            "session_id": session_id
+        }
         
     except Exception as e:
         raise HTTPException(
@@ -260,7 +255,6 @@ async def cleanup_session_background(
     session_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
-    from app.models.schemas import BackgroundTaskResponse
     """
     Start background session cleanup task.
     
@@ -279,12 +273,12 @@ async def cleanup_session_background(
         # Start background task
         task = cleanup_session_task.delay(session_id=session_id)
         
-        return BackgroundTaskResponse(
-            message="Session cleanup started in background",
-            task_id=task.id,
-            task_type="session_cleanup",
-            session_id=session_id
-        )
+        return {
+            "message": "Session cleanup started in background",
+            "task_id": task.id,
+            "task_type": "session_cleanup",
+            "session_id": session_id
+        }
         
     except Exception as e:
         raise HTTPException(
@@ -294,7 +288,6 @@ async def cleanup_session_background(
 
 @router.get("/status/{task_id}", response_model=dict)
 async def get_task_status(task_id: str):
-    from app.models.schemas import TaskStatusResponse
     """
     Get the status of a background task.
     
@@ -331,7 +324,7 @@ async def get_task_status(task_id: str):
                 'error': str(task_result.info)
             }
         
-        return TaskStatusResponse(**response)
+        return response
         
     except Exception as e:
         raise HTTPException(
