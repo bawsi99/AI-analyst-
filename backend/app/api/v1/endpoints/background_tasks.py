@@ -295,7 +295,7 @@ async def get_task_status(task_id: str):
     - Returns task status and result if completed
     """
     try:
-        from app.celery import celery
+        from app.celery_app import celery
         
         # Get task result
         task_result = celery.AsyncResult(task_id)

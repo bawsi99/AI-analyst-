@@ -1,5 +1,5 @@
 from celery import current_task
-from app.celery import celery
+from app.celery_app import celery
 from app.ml.pipeline import ml_pipeline
 from app.services.data_service import data_service
 from app.services.summary_service import summary_service
