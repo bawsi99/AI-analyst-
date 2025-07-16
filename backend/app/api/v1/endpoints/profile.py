@@ -1,16 +1,17 @@
-from app.models.schemas import ProfileResponse
 from app.services.data_service import data_service
 from app.services.database_service import database_service
 from app.core.auth import get_current_user
+from fastapi import APIRouter, Depends, HTTPException, status
 from typing import Dict, Any
 
 router = APIRouter()
 
-@router.get("/{session_id}", response_model=ProfileResponse)
+@router.get("/{session_id}", response_model=dict)
 async def get_profile(
     session_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
+    from app.models.schemas import ProfileResponse
     """
     Get comprehensive data profile for uploaded CSV.
     
