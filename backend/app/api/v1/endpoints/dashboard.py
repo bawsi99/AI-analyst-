@@ -266,12 +266,8 @@ async def get_model_features(
             if (column['name'] != target_column and 
                 column['name'] not in excluded_columns):
                 
-                # Determine data type for frontend
-                dtype = column['dtype']
-                if dtype in ['int64', 'float64', 'int32', 'float32']:
-                    frontend_dtype = 'numerical'
-                else:
-                    frontend_dtype = 'categorical'
+                # Use the data type from the schema (already frontend-friendly)
+                frontend_dtype = column['dtype']
                 
                 model_features.append({
                     'name': column['name'],
