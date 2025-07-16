@@ -1,4 +1,3 @@
-from fastapi import APIRouter, HTTPException, status, Depends
 from app.models.schemas import ProfileResponse
 from app.services.data_service import data_service
 from app.services.database_service import database_service

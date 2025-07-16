@@ -1,5 +1,3 @@
-from fastapi import APIRouter, HTTPException, status, Query
-from app.models.schemas import SummaryResponse
 from app.services.data_service import data_service
 from app.services.summary_service import summary_service
 

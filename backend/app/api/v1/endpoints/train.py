@@ -1,5 +1,3 @@
-from fastapi import APIRouter, HTTPException, status, Depends
-from app.models.schemas import TrainingRequest, TrainingResponse
 from app.services.data_service import data_service
 from app.services.database_service import database_service
 from app.services.summary_service import summary_service

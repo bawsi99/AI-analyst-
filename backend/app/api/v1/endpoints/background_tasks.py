@@ -1,5 +1,3 @@
-from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
-from app.models.schemas import TrainingRequest, BackgroundTaskResponse, TaskStatusResponse
 from app.services.data_service import data_service
 from app.services.database_service import database_service
 from app.tasks import (
