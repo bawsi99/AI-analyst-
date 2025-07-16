@@ -142,10 +142,10 @@ RUN mkdir -p /app/logs/celery && chown -R appuser:appuser /app/logs
 
 # Health check for Celery
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD celery -A app.celery inspect ping || exit 1
+    CMD celery -A celery inspect ping || exit 1
 
 # Celery worker command
-CMD ["celery", "-A", "app.celery", "worker", "--loglevel=info", "--concurrency=2"]
+CMD ["celery", "-A", "celery", "worker", "--loglevel=info", "--concurrency=2"]
 
 # Celery beat stage
 FROM production as celery-beat
@@ -155,7 +155,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD ps aux | grep "celery.*beat" | grep -v grep || exit 1
 
 # Celery beat command
-CMD ["celery", "-A", "app.celery", "beat", "--loglevel=info"]
+CMD ["celery", "-A", "celery", "beat", "--loglevel=info"]
 
 # Flower monitoring stage
 FROM production as flower
@@ -177,4 +177,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:5555/ || exit 1
 
 # Flower command
-CMD ["celery", "-A", "app.celery", "flower", "--port=5555", "--broker=redis://redis:6379/0"] 
+CMD ["celery", "-A", "celery", "flower", "--port=5555", "--broker=redis://redis:6379/0"] 
