@@ -1,6 +1,7 @@
 from pydantic_settings import BaseSettings
 from typing import List
 import os
+from pydantic import Field
 
 class Settings(BaseSettings):
     # API Configuration
@@ -53,9 +54,10 @@ class Settings(BaseSettings):
     # Gemini LLM Configuration
     GEMINI_LLM_API_KEY: str = ""
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = {
+        "env_file": ".env",
+        "case_sensitive": True
+    }
 
 settings = Settings()
 

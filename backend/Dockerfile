@@ -1,5 +1,5 @@
 # Simple production Dockerfile for FastAPI
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
