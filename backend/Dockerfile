@@ -36,6 +36,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONPATH="/app"
+ENV MPLCONFIGDIR=/tmp/matplotlib
 
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
@@ -79,6 +80,7 @@ COPY --chown=appuser:appuser . .
 RUN mkdir -p /app/models /app/uploads /app/logs \
     && chown -R appuser:appuser /app \
     && chmod -R 755 /app
+RUN mkdir -p /tmp/matplotlib && chown -R appuser:appuser /tmp/matplotlib
 
 # Create symlinks for common ML libraries to reduce image size
 RUN ln -sf /opt/venv/lib/python3.9/site-packages/sklearn /app/sklearn \

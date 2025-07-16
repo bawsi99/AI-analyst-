@@ -49,7 +49,8 @@ COPY nginx.conf /etc/nginx/nginx.conf
 
 # Create necessary directories and set permissions
 RUN mkdir -p /var/cache/nginx /var/log/nginx /var/run && \
-    chown -R nextjs:nodejs /var/cache/nginx /var/log/nginx /var/run /usr/share/nginx/html
+    chown -R nginx:nginx /var/cache/nginx /var/log/nginx /var/run && \
+    chown -R nextjs:nodejs /usr/share/nginx/html
 
 # Switch to non-root user
 USER nextjs
