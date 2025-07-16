@@ -67,7 +67,25 @@ npm install
 ### Environment Configuration
 Create a `.env` file in the root directory:
 ```env
-gemini_llm_api_key=your_gemini_api_key_here
+# Required for AI Analysis
+GEMINI_LLM_API_KEY=your_gemini_api_key_here
+
+# Supabase Configuration (Required)
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+
+# Database Configuration (Optional - defaults to local PostgreSQL)
+DATABASE_URL=postgresql://user:password@localhost/ai_analyst
+
+# Redis Configuration (Optional - for background tasks)
+REDIS_URL=redis://localhost:6379/0
+
+# S3 Storage (Optional)
+AWS_ACCESS_KEY_ID=your_aws_access_key
+AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+AWS_REGION=us-east-1
+S3_BUCKET_NAME=your_bucket_name
 ```
 
 ## 🚀 Running the Application
@@ -126,12 +144,27 @@ GET /api/v1/ai-analysis/{session_id}
 GET /api/v1/export/report/{session_id}
 ```
 
+### 8. Authentication
+```http
+POST /api/v1/auth/register
+POST /api/v1/auth/login
+GET /api/v1/auth/profile
+```
+
+### 9. Dashboard
+```http
+GET /api/v1/dashboard/stats
+GET /api/v1/dashboard/sessions
+GET /api/v1/dashboard/models
+GET /api/v1/dashboard/predictions
+```
+
 ## 🧪 Testing
 
 ### Backend Tests
 ```bash
 cd backend
-pytest tests/ -v
+pytest -v
 ```
 
 ### Frontend Tests
@@ -157,12 +190,18 @@ npm test
 - `UPLOAD_STORAGE_PATH`: Path to store uploaded files
 - `CORS_ORIGINS`: Allowed CORS origins for frontend
 - `GEMINI_LLM_API_KEY`: Google Gemini API key for AI analysis
+- `SUPABASE_URL`: Supabase project URL
+- `SUPABASE_ANON_KEY`: Supabase anonymous key
+- `SUPABASE_SERVICE_ROLE_KEY`: Supabase service role key
+- `DATABASE_URL`: PostgreSQL database connection string
+- `REDIS_URL`: Redis connection string for background tasks
 
 ## 🚀 Deployment
 
 ### Production Docker
 ```bash
-docker-compose -f docker-compose.prod.yml up --build
+# Use the existing docker-compose.yml for production
+docker-compose up --build
 ```
 
 ### Cloud Deployment

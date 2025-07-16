@@ -1,0 +1,21 @@
+customer_id,age,gender,tenure,monthly_charges,total_charges,contract_type,payment_method,internet_service,online_security,online_backup,device_protection,tech_support,streaming_tv,streaming_movies,paperless_billing,churn
+1,29,Female,1,29.85,29.85,Month-to-month,Electronic check,DSL,No,No,No,No,No,No,Yes,Yes
+2,1,Male,34,56.95,1889.5,One year,Mailed check,DSL,Yes,No,Yes,No,No,No,No,No
+3,2,Female,2,53.85,108.15,Month-to-month,Mailed check,DSL,Yes,Yes,No,No,No,No,Yes,Yes
+4,32,Male,45,42.3,1840.75,One year,Bank transfer (automatic),DSL,Yes,No,Yes,Yes,No,No,No,No
+5,31,Female,2,70.7,151.65,Month-to-month,Electronic check,Fiber optic,No,No,No,No,No,No,Yes,Yes
+6,29,Female,8,99.65,820.5,Month-to-month,Electronic check,Fiber optic,No,No,No,No,Yes,Yes,Yes,Yes
+7,44,Male,22,89.1,1949.4,One year,Mailed check,Fiber optic,Yes,No,Yes,Yes,Yes,Yes,No,No
+8,27,Male,10,29.75,301.9,Month-to-month,Electronic check,DSL,No,No,No,No,No,No,Yes,Yes
+9,33,Male,28,42.65,1192.75,One year,Bank transfer (automatic),DSL,Yes,Yes,Yes,Yes,No,No,No,No
+10,63,Female,25,99.35,2464.85,One year,Bank transfer (automatic),Fiber optic,Yes,Yes,Yes,Yes,Yes,Yes,No,No
+11,23,Male,69,114.7,7956.8,Two year,Credit card (automatic),Fiber optic,Yes,Yes,Yes,Yes,Yes,Yes,Yes,No
+12,45,Female,52,103.7,5363.1,Two year,Credit card (automatic),Fiber optic,Yes,Yes,Yes,Yes,Yes,Yes,Yes,No
+13,78,Female,71,105.5,7382.25,Two year,Bank transfer (automatic),Fiber optic,Yes,Yes,Yes,Yes,Yes,Yes,Yes,No
+14,50,Male,10,75.75,753.3,Month-to-month,Electronic check,Fiber optic,No,No,No,No,Yes,Yes,Yes,Yes
+15,47,Male,21,103.7,2156.8,One year,Bank transfer (automatic),Fiber optic,Yes,Yes,Yes,Yes,Yes,Yes,No,No
+16,29,Male,72,116.5,8367.8,Two year,Credit card (automatic),Fiber optic,Yes,Yes,Yes,Yes,Yes,Yes,Yes,No
+17,45,Female,16,89.1,1413.4,One year,Mailed check,Fiber optic,Yes,No,Yes,Yes,Yes,Yes,No,No
+18,43,Male,25,98.75,2448.5,One year,Bank transfer (automatic),Fiber optic,Yes,Yes,Yes,Yes,Yes,Yes,No,No
+19,27,Female,69,103.7,7089.0,Two year,Credit card (automatic),Fiber optic,Yes,Yes,Yes,Yes,Yes,Yes,Yes,No
+20,66,Male,52,113.25,5853.1,Two year,Credit card (automatic),Fiber optic,Yes,Yes,Yes,Yes,Yes,Yes,Yes,No 
