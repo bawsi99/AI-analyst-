@@ -10,6 +10,7 @@ from app.tasks import (
     generate_summary_task
 )
 from app.core.auth import get_current_user
+from app.celery_app import celery
 from typing import Dict, Any, List
 import uuid
 
@@ -301,8 +302,6 @@ async def get_task_status(task_id: str):
     - Returns task status and result if completed
     """
     try:
-        from app.celery_app import celery
-        
         # Get task result
         task_result = celery.AsyncResult(task_id)
         
