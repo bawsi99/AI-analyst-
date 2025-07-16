@@ -25,10 +25,6 @@ class LoginRequest(BaseModel):
 class RefreshRequest(BaseModel):
     refresh_token: str
 
-class UserProfileUpdate(BaseModel):
-    full_name: Optional[str] = None
-    avatar_url: Optional[str] = None
-
 @router.post("/register")
 async def register_user(request: RegisterRequest):
     """
@@ -279,9 +275,10 @@ async def get_profile(current_user: Dict[str, Any] = Depends(get_current_user)):
 
 @router.put("/profile")
 async def update_profile(
-    profile_update: UserProfileUpdate,
+    profile_update: dict,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
+    from app.models.schemas import UserProfileUpdate
     """
     Update current user profile
     """
