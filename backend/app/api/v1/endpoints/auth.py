@@ -25,6 +25,10 @@ class LoginRequest(BaseModel):
 class RefreshRequest(BaseModel):
     refresh_token: str
 
+class UserProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+
 @router.post("/register")
 async def register_user(request: RegisterRequest):
     """
