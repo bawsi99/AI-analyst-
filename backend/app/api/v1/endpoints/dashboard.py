@@ -213,27 +213,89 @@ async def get_model_features(
         if not model:
             raise HTTPException(status_code=404, detail="Model not found")
         
-        # Extract feature importance from model data
-        feature_importance = model.get('feature_importance', {})
+        # Get the session ID from the model
+        session_id = None
+        if 'analysis_sessions' in model and model['analysis_sessions']:
+            session_id = model['analysis_sessions']['session_id']
+        elif 'text_session_id' in model:
+            session_id = model['text_session_id']
         
-        # Convert to list format for easier frontend consumption
-        features = [
-            {
-                "name": feature_name,
-                "importance": importance,
-                "rank": rank + 1
-            }
-            for rank, (feature_name, importance) in enumerate(
-                sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)
+        if not session_id:
+            raise HTTPException(status_code=404, detail="Session not found for this model")
+        
+        # Get data profile from the session
+        from app.services.data_service import data_service
+        try:
+            profile_data = data_service.profile_data(session_id)
+            schema = profile_data['schema']
+        except Exception as e:
+            # Fallback: try to get from database metadata
+            session_info = await database_service.get_session_by_id(session_id, current_user["id"])
+            if not session_info or 'metadata' not in session_info:
+                raise HTTPException(status_code=404, detail="Data profile not found")
+            
+            # Try to get schema from metadata
+            metadata = session_info.get('metadata', {})
+            if 'data_insights' not in metadata:
+                raise HTTPException(status_code=404, detail="Data profile not found")
+            
+            # Create basic schema from available data
+            schema = []
+            # This is a fallback - we'll create basic feature info
+            feature_importance = model.get('feature_importance', {})
+            for feature_name in feature_importance.keys():
+                schema.append({
+                    'name': feature_name,
+                    'dtype': 'numerical',  # Default assumption
+                    'null_count': 0,
+                    'null_percentage': 0.0,
+                    'unique_count': 0,
+                    'is_constant': False,
+                    'is_high_cardinality': False,
+                    'sample_values': []
+                })
+        
+        # Get target column and excluded columns
+        target_column = model.get('target_column', '')
+        excluded_columns = model.get('hyperparameters', {}).get('excluded_columns', [])
+        
+        # Filter schema to only include features used in the model
+        # (exclude target column and excluded columns)
+        model_features = []
+        for column in schema:
+            if (column['name'] != target_column and 
+                column['name'] not in excluded_columns):
+                
+                # Determine data type for frontend
+                dtype = column['dtype']
+                if dtype in ['int64', 'float64', 'int32', 'float32']:
+                    frontend_dtype = 'numerical'
+                else:
+                    frontend_dtype = 'categorical'
+                
+                model_features.append({
+                    'name': column['name'],
+                    'dtype': frontend_dtype,
+                    'unique_count': column.get('unique_count', 0),
+                    'sample_values': column.get('sample_values', [])[:5],  # Limit to 5 sample values
+                    'null_percentage': column.get('null_percentage', 0.0)
+                })
+        
+        # Sort features by importance if available
+        feature_importance = model.get('feature_importance', {})
+        if feature_importance:
+            # Sort by importance (descending)
+            model_features.sort(
+                key=lambda x: feature_importance.get(x['name'], 0),
+                reverse=True
             )
-        ]
         
         return {
             "message": "Model features retrieved successfully",
             "success": True,
             "model_id": model_id,
-            "target_column": model.get('target_column', ''),
-            "features": features
+            "target_column": target_column,
+            "features": model_features
         }
     except HTTPException:
         raise
