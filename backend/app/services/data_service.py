@@ -6,7 +6,6 @@ import uuid
 from datetime import datetime
 import json
 from app.core.config import settings
-from app.models.schemas import ColumnSchema, DataStatistics, DataInsights, CorrelationPair
 
 class DataService:
     def __init__(self):
@@ -76,8 +75,9 @@ class DataService:
     
 
     
-    def infer_schema(self, df: pd.DataFrame) -> List[ColumnSchema]:
+    def infer_schema(self, df: pd.DataFrame) -> List:
         """Infer schema from DataFrame"""
+        from app.models.schemas import ColumnSchema
         schema = []
         
         for column in df.columns:
@@ -130,8 +130,9 @@ class DataService:
             
         return schema
     
-    def calculate_statistics(self, df: pd.DataFrame) -> DataStatistics:
+    def calculate_statistics(self, df: pd.DataFrame):
         """Calculate basic statistics"""
+        from app.models.schemas import DataStatistics
         memory_usage = df.memory_usage(deep=True).sum()
         memory_usage_mb = f"{memory_usage / 1024 / 1024:.2f} MB"
         
@@ -190,6 +191,7 @@ class DataService:
             col2 = corr_matrix.columns[j]
             corr_value = float(corr_matrix.iloc[i, j])
             
+            from app.models.schemas import CorrelationPair
             correlations.append(CorrelationPair(
                 column1=col1,
                 column2=col2,
@@ -248,8 +250,9 @@ class DataService:
                 
         return leakage
     
-    def generate_insights(self, df: pd.DataFrame, target_col: str = None) -> DataInsights:
+    def generate_insights(self, df: pd.DataFrame, target_col: str = None):
         """Generate comprehensive data insights"""
+        from app.models.schemas import DataInsights
         outliers = self.detect_outliers(df)
         skewness = self.calculate_skewness(df)
         correlations = self.calculate_correlations(df)

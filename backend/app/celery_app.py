@@ -24,8 +24,10 @@ celery.conf.update(
 
 # Import tasks so they are registered with Celery
 try:
-    celery.autodiscover_tasks(['app.tasks'])
+    # Import tasks directly instead of using autodiscover
+    import app.tasks
+    print("Tasks imported successfully")
 except Exception as e:
-    print(f"Error discovering tasks: {e}")
+    print(f"Error importing tasks: {e}")
     import traceback
     traceback.print_exc() 
