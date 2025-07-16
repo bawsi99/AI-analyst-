@@ -1,3 +1,4 @@
+from fastapi import APIRouter, Depends, HTTPException, status
 from app.services.data_service import data_service
 from app.services.database_service import database_service
 from app.services.summary_service import summary_service
@@ -9,8 +10,9 @@ import os
 
 router = APIRouter()
 
-@router.post("/{session_id}", response_model=TrainingResponse)
-async def train_model(session_id: str, request: TrainingRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
+@router.post("/{session_id}", response_model=dict)
+async def train_model(session_id: str, request: dict, current_user: Dict[str, Any] = Depends(get_current_user)):
+    from app.models.schemas import TrainingRequest, TrainingResponse
     """
     Train a machine learning model on the uploaded data.
     

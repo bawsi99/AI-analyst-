@@ -1,4 +1,9 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, EmailStr
 from typing import Dict, Any, Optional
+from app.core.auth import get_current_user
+from app.core.supabase import get_supabase_anon_client
+from app.services.database_service import database_service
 import logging
 
 # Set up logging

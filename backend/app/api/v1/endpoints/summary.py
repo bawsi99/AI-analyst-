@@ -1,13 +1,15 @@
+from fastapi import APIRouter, HTTPException, status, Query
 from app.services.data_service import data_service
 from app.services.summary_service import summary_service
 
 router = APIRouter()
 
-@router.get("/{session_id}", response_model=SummaryResponse)
+@router.get("/{session_id}", response_model=dict)
 async def get_summary(
     session_id: str,
     model_id: str = Query(None, description="Optional model ID to include model summary")
 ):
+    from app.models.schemas import SummaryResponse
     """
     Get natural language summary of data and model insights.
     

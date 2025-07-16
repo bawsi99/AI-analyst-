@@ -1,3 +1,4 @@
+from fastapi import APIRouter, Depends, HTTPException, status
 from app.services.data_service import data_service
 from app.services.database_service import database_service
 from app.tasks import (
@@ -14,12 +15,13 @@ import uuid
 
 router = APIRouter()
 
-@router.post("/train/{session_id}", response_model=BackgroundTaskResponse)
+@router.post("/train/{session_id}", response_model=dict)
 async def train_model_background(
     session_id: str, 
-    request: TrainingRequest, 
+    request: dict, 
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
+    from app.models.schemas import TrainingRequest, BackgroundTaskResponse
     """
     Start background ML model training task.
     
@@ -83,12 +85,13 @@ async def train_model_background(
             detail=f"Error starting training task: {str(e)}"
         )
 
-@router.post("/ai-analysis/{session_id}", response_model=BackgroundTaskResponse)
+@router.post("/ai-analysis/{session_id}", response_model=dict)
 async def generate_ai_analysis_background(
     session_id: str,
     model_id: str = None,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
+    from app.models.schemas import BackgroundTaskResponse
     """
     Start background AI analysis task using Gemini LLM.
     
@@ -125,11 +128,12 @@ async def generate_ai_analysis_background(
             detail=f"Error starting AI analysis task: {str(e)}"
         )
 
-@router.post("/profile/{session_id}", response_model=BackgroundTaskResponse)
+@router.post("/profile/{session_id}", response_model=dict)
 async def profile_data_background(
     session_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
+    from app.models.schemas import BackgroundTaskResponse
     """
     Start background data profiling task.
     
@@ -164,12 +168,13 @@ async def profile_data_background(
             detail=f"Error starting data profiling task: {str(e)}"
         )
 
-@router.post("/predict/{model_id}/batch", response_model=BackgroundTaskResponse)
+@router.post("/predict/{model_id}/batch", response_model=dict)
 async def batch_predict_background(
     model_id: str,
     data: List[Dict[str, Any]],
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
+    from app.models.schemas import BackgroundTaskResponse
     """
     Start background batch prediction task.
     
@@ -206,12 +211,13 @@ async def batch_predict_background(
             detail=f"Error starting batch prediction task: {str(e)}"
         )
 
-@router.post("/summary/{session_id}", response_model=BackgroundTaskResponse)
+@router.post("/summary/{session_id}", response_model=dict)
 async def generate_summary_background(
     session_id: str,
     model_id: str = None,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
+    from app.models.schemas import BackgroundTaskResponse
     """
     Start background summary generation task.
     
@@ -248,11 +254,12 @@ async def generate_summary_background(
             detail=f"Error starting summary generation task: {str(e)}"
         )
 
-@router.post("/cleanup/{session_id}", response_model=BackgroundTaskResponse)
+@router.post("/cleanup/{session_id}", response_model=dict)
 async def cleanup_session_background(
     session_id: str,
     current_user: Dict[str, Any] = Depends(get_current_user)
 ):
+    from app.models.schemas import BackgroundTaskResponse
     """
     Start background session cleanup task.
     
@@ -284,8 +291,9 @@ async def cleanup_session_background(
             detail=f"Error starting cleanup task: {str(e)}"
         )
 
-@router.get("/status/{task_id}", response_model=TaskStatusResponse)
+@router.get("/status/{task_id}", response_model=dict)
 async def get_task_status(task_id: str):
+    from app.models.schemas import TaskStatusResponse
     """
     Get the status of a background task.
     

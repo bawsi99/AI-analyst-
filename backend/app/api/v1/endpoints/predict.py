@@ -1,3 +1,4 @@
+from fastapi import APIRouter, Depends, HTTPException, status
 from app.ml.pipeline import ml_pipeline
 from app.services.database_service import database_service
 from app.core.auth import get_current_user
@@ -6,8 +7,9 @@ import pandas as pd
 
 router = APIRouter()
 
-@router.post("/{model_id}", response_model=PredictionResponse)
-async def predict(model_id: str, request: PredictionRequest, current_user: Dict[str, Any] = Depends(get_current_user)):
+@router.post("/{model_id}", response_model=dict)
+async def predict(model_id: str, request: dict, current_user: Dict[str, Any] = Depends(get_current_user)):
+    from app.models.schemas import PredictionRequest, PredictionResponse
     """
     Make predictions using a trained model.
     
