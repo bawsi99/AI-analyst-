@@ -121,10 +121,16 @@ CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload
 # Celery worker stage
 FROM production as celery
 
+# Switch to root for installing packages
+USER root
+
 # Install additional dependencies for Celery
 RUN apt-get update && apt-get install -y --no-install-recommends \
     supervisor \
     && rm -rf /var/lib/apt/lists/*
+
+# Switch back to appuser
+USER appuser
 
 # Copy Celery configuration
 COPY --chown=appuser:appuser celery.conf /etc/supervisor/conf.d/celery.conf
@@ -152,8 +158,14 @@ CMD ["celery", "-A", "app.celery", "beat", "--loglevel=info"]
 # Flower monitoring stage
 FROM production as flower
 
+# Switch to root for installing packages
+USER root
+
 # Install Flower
 RUN pip install flower
+
+# Switch back to appuser
+USER appuser
 
 # Expose Flower port
 EXPOSE 5555
