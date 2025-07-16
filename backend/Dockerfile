@@ -35,7 +35,7 @@ FROM python:3.9-slim as production
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/opt/venv/bin:$PATH"
-ENV PYTHONPATH="/app"
+ENV PYTHONPATH="/app:/app/app"
 ENV MPLCONFIGDIR=/tmp/matplotlib
 
 # Create non-root user for security
@@ -77,6 +77,8 @@ WORKDIR /app
 COPY --chown=appuser:appuser . .
 
 # Create necessary directories with proper permissions
+
+# Create necessary directories with proper permissions
 RUN mkdir -p /app/models /app/uploads /app/logs \
     && chown -R appuser:appuser /app \
     && chmod -R 755 /app
@@ -98,7 +100,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Default command for production
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "${PORT:-8000}", "--workers", "1"]
 
 # Development stage (inherits from production)
 FROM production as development
@@ -118,7 +120,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 USER appuser
 
 # Development command with reload
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "${PORT:-8000}", "--reload"]
 
 # Celery worker stage
 FROM production as celery
@@ -177,4 +179,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:5555/ || exit 1
 
 # Flower command
-CMD ["celery", "-A", "app.celery", "flower", "--port=5555", "--broker=redis://redis:6379/0"] 
+CMD ["celery", "-A", "app.celery", "flower", "--port=5555"] 
