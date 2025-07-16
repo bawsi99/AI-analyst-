@@ -35,7 +35,7 @@ FROM python:3.9-slim as production
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/opt/venv/bin:$PATH"
-ENV PYTHONPATH=""
+ENV PYTHONPATH="/app"
 ENV MPLCONFIGDIR=/tmp/matplotlib
 
 # Create non-root user for security
@@ -98,7 +98,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Default command for production
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
 
 # Development stage (inherits from production)
 FROM production as development
@@ -118,7 +118,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 USER appuser
 
 # Development command with reload
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 # Celery worker stage
 FROM production as celery
@@ -142,10 +142,10 @@ RUN mkdir -p /app/logs/celery && chown -R appuser:appuser /app/logs
 
 # Health check for Celery
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD celery -A celery inspect ping || exit 1
+    CMD celery -A app.celery inspect ping || exit 1
 
 # Celery worker command
-CMD ["celery", "-A", "celery", "worker", "--loglevel=info", "--concurrency=2"]
+CMD ["celery", "-A", "app.celery", "worker", "--loglevel=info", "--concurrency=2"]
 
 # Celery beat stage
 FROM production as celery-beat
@@ -155,7 +155,7 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD ps aux | grep "celery.*beat" | grep -v grep || exit 1
 
 # Celery beat command
-CMD ["celery", "-A", "celery", "beat", "--loglevel=info"]
+CMD ["celery", "-A", "app.celery", "beat", "--loglevel=info"]
 
 # Flower monitoring stage
 FROM production as flower
@@ -177,4 +177,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:5555/ || exit 1
 
 # Flower command
-CMD ["celery", "-A", "celery", "flower", "--port=5555", "--broker=redis://redis:6379/0"] 
+CMD ["celery", "-A", "app.celery", "flower", "--port=5555", "--broker=redis://redis:6379/0"] 

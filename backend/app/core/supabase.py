@@ -1,5 +1,5 @@
 from supabase import create_client, Client
-from core.config import settings
+from app.core.config import settings
 import os
 
 # Initialize Supabase client with service role key for backend operations

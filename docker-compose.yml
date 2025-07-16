@@ -163,7 +163,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: celery
-    command: celery -A celery worker --loglevel=info --concurrency=2
+    command: celery -A app.celery worker --loglevel=info --concurrency=2
     environment:
       # Database
       - DATABASE_URL=${DATABASE_URL:-postgresql://user:password@postgres:5432/ai_analyst}
@@ -197,7 +197,7 @@ services:
       - ai-analyst-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "celery", "-A", "celery", "inspect", "ping"]
+      test: ["CMD", "celery", "-A", "app.celery", "inspect", "ping"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -217,7 +217,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: celery-beat
-    command: celery -A celery beat --loglevel=info
+    command: celery -A app.celery beat --loglevel=info
     environment:
       # Database
       - DATABASE_URL=${DATABASE_URL:-postgresql://user:password@postgres:5432/ai_analyst}
@@ -256,7 +256,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
       target: flower
-    command: celery -A celery flower --port=5555
+    command: celery -A app.celery flower --port=5555
     ports:
       - "5555:5555"
     environment:

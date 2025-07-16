@@ -1,10 +1,10 @@
 from celery import current_task
-from celery import celery
-from ml.pipeline import ml_pipeline
-from services.data_service import data_service
-from services.summary_service import summary_service
-from services.ai_analysis_service import ai_analysis_service
-from services.database_service import database_service
+from app.celery import celery
+from app.ml.pipeline import ml_pipeline
+from app.services.data_service import data_service
+from app.services.summary_service import summary_service
+from app.services.ai_analysis_service import ai_analysis_service
+from app.services.database_service import database_service
 from typing import Dict, Any, List
 import pandas as pd
 import os

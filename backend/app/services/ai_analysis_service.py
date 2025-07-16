@@ -1,9 +1,9 @@
 import os
 from typing import Dict, List, Any, Optional
-from core.config import settings
-from services.data_service import data_service
-from services.summary_service import summary_service
-from ml.pipeline import ml_pipeline
+from app.core.config import settings
+from app.services.data_service import data_service
+from app.services.summary_service import summary_service
+from app.ml.pipeline import ml_pipeline
 import pandas as pd
 import json
 from google import genai

@@ -3,8 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-from core.config import settings
-from api.v1.api import api_router
+from app.core.config import settings
+from app.api.v1.api import api_router
 
 app = FastAPI(
     title="Mini AI Analyst API",
@@ -40,7 +40,7 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    from services.redis_service import redis_service
+    from app.services.redis_service import redis_service
     
     # Check Redis health
     redis_healthy = redis_service.health_check()
