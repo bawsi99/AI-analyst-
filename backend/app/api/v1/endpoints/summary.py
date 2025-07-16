@@ -24,14 +24,15 @@ async def get_summary(
         # Generate complete summary
         summary_data = summary_service.generate_complete_summary(session_id, model_id)
         
-        return SummaryResponse(
-            message="Summary generated successfully",
-            session_id=session_id,
-            data_summary=summary_data['data_summary'],
-            model_summary=summary_data['model_summary'],
-            key_insights=summary_data['key_insights'],
-            recommendations=summary_data['recommendations']
-        )
+        return {
+            "message": "Summary generated successfully",
+            "success": True,
+            "session_id": session_id,
+            "data_summary": summary_data['data_summary'],
+            "model_summary": summary_data['model_summary'],
+            "key_insights": summary_data['key_insights'],
+            "recommendations": summary_data['recommendations']
+        }
         
     except ValueError as e:
         raise HTTPException(

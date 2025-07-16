@@ -81,12 +81,12 @@ async def upload_csv(file: UploadFile = File(...), current_user: Dict[str, Any] 
         )
         print(f"DEBUG: Created session in DB with session_id={session_id}, user_id={user_id}")
         
-        from app.models.schemas import UploadResponse
-        return UploadResponse(
-            message="File uploaded successfully",
-            session_id=session_id,
-            filename=file.filename
-        )
+        return {
+            "message": "File uploaded successfully",
+            "success": True,
+            "session_id": session_id,
+            "filename": file.filename
+        }
         
     except HTTPException:
         raise

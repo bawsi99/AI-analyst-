@@ -23,10 +23,10 @@ async def train_model(session_id: str, request: dict, current_user: Dict[str, An
     """
     try:
         # Validate model_type
-        if request.model_type not in ['classification', 'regression']:
+        if request.get('model_type') not in ['classification', 'regression']:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid model_type: {request.model_type}. Must be 'classification' or 'regression'"
+                detail=f"Invalid model_type: {request.get('model_type')}. Must be 'classification' or 'regression'"
             )
         
         # Get session info
@@ -41,14 +41,14 @@ async def train_model(session_id: str, request: dict, current_user: Dict[str, An
         df = data_service.load_data(session_id)
         
         # Validate target column
-        if request.target_column not in df.columns:
+        if request.get('target_column') not in df.columns:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Target column '{request.target_column}' not found in dataset"
+                detail=f"Target column '{request.get('target_column')}' not found in dataset"
             )
         
         # Remove excluded columns before training
-        excluded_columns = request.excluded_columns or []
+        excluded_columns = request.get('excluded_columns') or []
         columns_to_remove = []
         for col in excluded_columns:
             if col in df.columns:
@@ -66,22 +66,22 @@ async def train_model(session_id: str, request: dict, current_user: Dict[str, An
             )
         
         # Check target column distribution for classification
-        if request.model_type == 'classification':
-            target_counts = df[request.target_column].value_counts()
+        if request.get('model_type') == 'classification':
+            target_counts = df[request.get('target_column')].value_counts()
             if len(target_counts) < 2:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Target column '{request.target_column}' has only {len(target_counts)} unique values. At least 2 classes are required for classification."
+                    detail=f"Target column '{request.get('target_column')}' has only {len(target_counts)} unique values. At least 2 classes are required for classification."
                 )
             min_class_count = target_counts.min()
             if min_class_count < 1:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Target column '{request.target_column}' has a class with no samples. Each class must have at least 1 sample."
+                    detail=f"Target column '{request.get('target_column')}' has a class with no samples. Each class must have at least 1 sample."
                 )
         
         # Check for missing values in target
-        missing_target = df[request.target_column].isnull().sum()
+        missing_target = df[request.get('target_column')].isnull().sum()
         if missing_target > 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -91,9 +91,9 @@ async def train_model(session_id: str, request: dict, current_user: Dict[str, An
         # Train model with cleaned data (excluded columns already removed)
         training_result = ml_pipeline.train_model(
             df=df,
-            target_col=request.target_column,
-            model_type=request.model_type,
-            algorithm=request.algorithm
+            target_col=request.get('target_column'),
+            model_type=request.get('model_type'),
+            algorithm=request.get('algorithm')
         )
         
         # Session info already retrieved above
@@ -104,12 +104,12 @@ async def train_model(session_id: str, request: dict, current_user: Dict[str, An
             'model_path': f"models/{training_result['model_id']}.joblib",
             'model_type': training_result['model_type'],
             'target_column': training_result['target_column'],
-            'algorithm': request.algorithm or 'default',
+            'algorithm': request.get('algorithm') or 'default',
             'metrics': training_result['metrics'],
             'feature_importance': training_result['feature_importance'],
             'training_time': training_result['training_time'],
             'model_size': 0,  # Will be calculated if needed
-            'excluded_columns': request.excluded_columns or []  # Store excluded columns
+            'excluded_columns': request.get('excluded_columns') or []  # Store excluded columns
         }
         
         await database_service.create_trained_model(
@@ -164,15 +164,16 @@ async def train_model(session_id: str, request: dict, current_user: Dict[str, An
             metadata={'model_id': training_result['model_id']}
         )
         
-        return TrainingResponse(
-            message="Model trained successfully",
-            model_id=training_result['model_id'],
-            model_type=training_result['model_type'],
-            target_column=training_result['target_column'],
-            metrics=training_result['metrics'],
-            feature_importance=training_result['feature_importance'],
-            training_time=training_result['training_time']
-        )
+        return {
+            "message": "Model trained successfully",
+            "success": True,
+            "model_id": training_result['model_id'],
+            "model_type": training_result['model_type'],
+            "target_column": training_result['target_column'],
+            "metrics": training_result['metrics'],
+            "feature_importance": training_result['feature_importance'],
+            "training_time": training_result['training_time']
+        }
         
     except HTTPException:
         raise

@@ -19,16 +19,16 @@ async def predict(model_id: str, request: dict, current_user: Dict[str, Any] = D
     """
     try:
         # Validate input data
-        if not request.data:
+        if not request.get('data'):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="No data provided for prediction"
             )
         
         # Check if all records have the same keys
-        if len(request.data) > 1:
-            first_keys = set(request.data[0].keys())
-            for i, record in enumerate(request.data[1:], 1):
+        if len(request.get('data')) > 1:
+            first_keys = set(request.get('data')[0].keys())
+            for i, record in enumerate(request.get('data')[1:], 1):
                 if set(record.keys()) != first_keys:
                     raise HTTPException(
                         status_code=status.HTTP_400_BAD_REQUEST,
@@ -44,7 +44,7 @@ async def predict(model_id: str, request: dict, current_user: Dict[str, Any] = D
             )
         
         # Convert input data to DataFrame for easier manipulation
-        df = pd.DataFrame(request.data)
+        df = pd.DataFrame(request.get('data'))
         input_columns = set(df.columns)
         
         # Get target column from model info
@@ -75,7 +75,7 @@ async def predict(model_id: str, request: dict, current_user: Dict[str, Any] = D
         
         # Save prediction to database
         prediction_data = {
-            'input_data': request.data,
+            'input_data': request.get('data'),
             'predictions': prediction_result['predictions'],
             'confidence_scores': prediction_result['confidence_scores']
         }
@@ -86,15 +86,14 @@ async def predict(model_id: str, request: dict, current_user: Dict[str, Any] = D
             prediction_data=prediction_data
         )
         
-        response = PredictionResponse(
-            message="Predictions generated successfully",
-            model_id=model_id,
-            predictions=prediction_result['predictions'],
-            confidence_scores=prediction_result['confidence_scores'],
-            probabilities=prediction_result['probabilities']
-        )
-        print('PredictionResponse:', response.dict())
-        return response
+        return {
+            "message": "Predictions generated successfully",
+            "success": True,
+            "model_id": model_id,
+            "predictions": prediction_result['predictions'],
+            "confidence_scores": prediction_result['confidence_scores'],
+            "probabilities": prediction_result.get('probabilities')
+        }
         
     except ValueError as e:
         raise HTTPException(

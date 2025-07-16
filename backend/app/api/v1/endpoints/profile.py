@@ -43,14 +43,15 @@ async def get_profile(
         
         await database_service.save_data_insights(session_id, current_user["id"], insights_data)
         
-        return ProfileResponse(
-            message="Data profile generated successfully",
-            session_id=session_id,
-            metadata=profile_data['metadata'],
-            schema=profile_data['schema'],
-            statistics=profile_data['statistics'],
-            insights=profile_data['insights']
-        )
+        return {
+            "message": "Data profile generated successfully",
+            "success": True,
+            "session_id": session_id,
+            "metadata": profile_data['metadata'],
+            "schema": profile_data['schema'],
+            "statistics": profile_data['statistics'],
+            "insights": profile_data['insights']
+        }
         
     except ValueError as e:
         raise HTTPException(
