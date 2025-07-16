@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from models.schemas import PredictionRequest, PredictionResponse
-from ml.pipeline import ml_pipeline
-from services.database_service import database_service
-from core.auth import get_current_user
+from app.models.schemas import PredictionRequest, PredictionResponse
+from app.ml.pipeline import ml_pipeline
+from app.services.database_service import database_service
+from app.core.auth import get_current_user
 from typing import Dict, Any
 import pandas as pd
 

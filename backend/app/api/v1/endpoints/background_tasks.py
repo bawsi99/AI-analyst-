@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
-from models.schemas import TrainingRequest, BackgroundTaskResponse, TaskStatusResponse
-from services.data_service import data_service
-from services.database_service import database_service
-from tasks import (
+from app.models.schemas import TrainingRequest, BackgroundTaskResponse, TaskStatusResponse
+from app.services.data_service import data_service
+from app.services.database_service import database_service
+from app.tasks import (
     train_model_task, 
     generate_ai_analysis_task, 
     profile_data_task,
@@ -10,7 +10,7 @@ from tasks import (
     cleanup_session_task,
     generate_summary_task
 )
-from core.auth import get_current_user
+from app.core.auth import get_current_user
 from typing import Dict, Any, List
 import uuid
 
@@ -295,7 +295,7 @@ async def get_task_status(task_id: str):
     - Returns task status and result if completed
     """
     try:
-        from celery import celery
+        from app.celery import celery
         
         # Get task result
         task_result = celery.AsyncResult(task_id)

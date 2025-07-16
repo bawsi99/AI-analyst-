@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from models.schemas import ProfileResponse
-from services.data_service import data_service
-from services.database_service import database_service
-from core.auth import get_current_user
+from app.models.schemas import ProfileResponse
+from app.services.data_service import data_service
+from app.services.database_service import database_service
+from app.core.auth import get_current_user
 from typing import Dict, Any
 
 router = APIRouter()

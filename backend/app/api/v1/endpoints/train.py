@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from models.schemas import TrainingRequest, TrainingResponse
-from services.data_service import data_service
-from services.database_service import database_service
-from services.summary_service import summary_service
-from ml.pipeline import ml_pipeline
-from core.auth import get_current_user
+from app.models.schemas import TrainingRequest, TrainingResponse
+from app.services.data_service import data_service
+from app.services.database_service import database_service
+from app.services.summary_service import summary_service
+from app.ml.pipeline import ml_pipeline
+from app.core.auth import get_current_user
 from typing import Dict, Any
 import pandas as pd
 import os
