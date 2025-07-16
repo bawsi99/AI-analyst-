@@ -42,18 +42,18 @@ async def train_model_background(
             )
         
         # Validate model_type
-        if request.model_type not in ['classification', 'regression']:
+        if request.get('model_type') not in ['classification', 'regression']:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Invalid model_type: {request.model_type}. Must be 'classification' or 'regression'"
+                detail=f"Invalid model_type: {request.get('model_type')}. Must be 'classification' or 'regression'"
             )
         
         # Prepare training parameters
         training_params = {
-            'target_column': request.target_column,
-            'model_type': request.model_type,
-            'algorithm': request.algorithm,
-            'excluded_columns': request.excluded_columns or []
+            'target_column': request.get('target_column'),
+            'model_type': request.get('model_type'),
+            'algorithm': request.get('algorithm'),
+            'excluded_columns': request.get('excluded_columns') or []
         }
         
         # Start background task
