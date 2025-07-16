@@ -261,6 +261,10 @@ services:
       - "5555:5555"
     environment:
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      - GEMINI_LLM_API_KEY=${GEMINI_LLM_API_KEY}
     depends_on:
       redis:
         condition: service_healthy
