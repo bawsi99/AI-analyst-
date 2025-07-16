@@ -1,6 +1,7 @@
 # Mini AI Analyst
 
 A comprehensive data analysis and machine learning platform that provides automated data profiling, model training, predictions, and AI-powered insights using Google's Gemini LLM.
+Deployed at : https://orthoaiassgnment.vercel.app/
 
 ## 🚀 Features
 
