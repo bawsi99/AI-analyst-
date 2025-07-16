@@ -35,7 +35,7 @@ FROM python:3.9-slim as production
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV PATH="/opt/venv/bin:$PATH"
-ENV PYTHONPATH="/app"
+ENV PYTHONPATH=""
 ENV MPLCONFIGDIR=/tmp/matplotlib
 
 # Create non-root user for security

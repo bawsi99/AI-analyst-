@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from app.core.supabase import verify_user_session
+from core.supabase import verify_user_session
 from typing import Optional
 
 security = HTTPBearer()

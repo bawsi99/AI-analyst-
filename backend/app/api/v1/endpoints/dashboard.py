@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Query
-from app.services.database_service import database_service
-from app.core.auth import get_current_user
+from services.database_service import database_service
+from core.auth import get_current_user
 from typing import Dict, Any, List, Optional
 
 router = APIRouter()
@@ -198,7 +198,7 @@ async def get_model_details(
             
             # Try to get AI analysis (if available)
             try:
-                from app.services.ai_analysis_service import ai_analysis_service
+                from services.ai_analysis_service import ai_analysis_service
                 print(f"Checking AI analysis availability for session {session_id}")
                 if ai_analysis_service.is_available():
                     print(f"AI analysis service is available, generating analysis...")
@@ -285,7 +285,7 @@ async def get_model_features(
         # Try to get feature information from the data service first
         features = []
         try:
-            from app.services.data_service import data_service
+            from services.data_service import data_service
             profile_data = data_service.profile_data(session["session_id"])
             
             # Filter out the target column and excluded columns, and get feature schema

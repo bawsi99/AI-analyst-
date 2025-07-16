@@ -51,10 +51,13 @@ COPY nginx.conf /etc/nginx/nginx.conf
 RUN mkdir -p /var/cache/nginx /var/log/nginx /var/run && \
     chown -R nginx:nginx /var/cache/nginx /var/log/nginx /var/run && \
     chown -R nextjs:nodejs /usr/share/nginx/html
-RUN chown -R nginx:nginx /var/cache/nginx
+RUN mkdir -p /var/cache/nginx/client_temp /var/cache/nginx/proxy_temp /var/cache/nginx/fastcgi_temp /var/cache/nginx/uwsgi_temp /var/cache/nginx/scgi_temp && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chmod -R 755 /var/cache/nginx
+RUN mkdir -p /run && chown -R nginx:nginx /run && chmod -R 755 /run
 
 # Switch to non-root user
-USER nextjs
+USER nginx
 
 # Expose port
 EXPOSE 3000

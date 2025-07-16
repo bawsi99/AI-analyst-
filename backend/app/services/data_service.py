@@ -5,8 +5,8 @@ import os
 import uuid
 from datetime import datetime
 import json
-from app.core.config import settings
-from app.models.schemas import ColumnSchema, DataStatistics, DataInsights
+from core.config import settings
+from models.schemas import ColumnSchema, DataStatistics, DataInsights
 
 class DataService:
     def __init__(self):
@@ -190,7 +190,7 @@ class DataService:
             col2 = corr_matrix.columns[j]
             corr_value = float(corr_matrix.iloc[i, j])
             
-            from app.models.schemas import CorrelationPair
+            from models.schemas import CorrelationPair
             correlations.append(CorrelationPair(
                 column1=col1,
                 column2=col2,

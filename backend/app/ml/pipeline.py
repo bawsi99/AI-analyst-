@@ -18,7 +18,7 @@ import uuid
 from typing import Dict, List, Any, Tuple, Optional
 from datetime import datetime
 import shap
-from app.core.config import settings
+from core.config import settings
 
 class MLPipeline:
     def __init__(self):

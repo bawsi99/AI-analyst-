@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Query
 from fastapi.responses import FileResponse, StreamingResponse
-from app.services.data_service import data_service
-from app.services.summary_service import summary_service
-from app.ml.pipeline import ml_pipeline
+from services.data_service import data_service
+from services.summary_service import summary_service
+from ml.pipeline import ml_pipeline
 import os
 import json
 import zipfile

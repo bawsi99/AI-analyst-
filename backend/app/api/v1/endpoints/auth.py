@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, EmailStr
-from app.core.supabase import get_supabase_client, get_supabase_anon_client
-from app.services.database_service import database_service
-from app.core.auth import get_current_user
-from app.models.schemas import UserProfile, UserProfileUpdate
+from core.supabase import get_supabase_client, get_supabase_anon_client
+from services.database_service import database_service
+from core.auth import get_current_user
+from models.schemas import UserProfile, UserProfileUpdate
 from typing import Dict, Any, Optional
 import logging
 

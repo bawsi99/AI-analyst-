@@ -410,8 +410,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 🆘 Support
 
 For support and questions:
-- Check the API documentation at `/docs`
+- Check the API documentation at `/docs`    
 - Review the health check endpoints
 - Check the logs for error details
 - Monitor the Flower dashboard for task status
+
+##TIME
+10-11 hours 
 

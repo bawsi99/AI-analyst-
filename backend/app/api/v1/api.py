@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import upload, profile, train, predict, summary, export, auth, dashboard, ai_analysis, background_tasks, monitoring
+from endpoints import upload, profile, train, predict, summary, export, auth, dashboard, ai_analysis, background_tasks, monitoring
 
 api_router = APIRouter()
 

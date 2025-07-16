@@ -1,5 +1,5 @@
 from typing import Dict, List, Any, Optional
-from app.core.supabase import get_supabase_client
+from core.supabase import get_supabase_client
 from datetime import datetime
 import uuid
 

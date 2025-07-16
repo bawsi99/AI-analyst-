@@ -1,9 +1,9 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, status, Depends
-from app.models.schemas import UploadResponse
-from app.services.data_service import data_service
-from app.services.database_service import database_service
-from app.core.config import settings
-from app.core.auth import get_current_user
+from models.schemas import UploadResponse
+from services.data_service import data_service
+from services.database_service import database_service
+from core.config import settings
+from core.auth import get_current_user
 from typing import Dict, Any
 import os
 

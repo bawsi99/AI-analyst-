@@ -1,7 +1,7 @@
 import pandas as pd
 from typing import Dict, List, Any
-from app.services.data_service import data_service
-from app.ml.pipeline import ml_pipeline
+from services.data_service import data_service
+from ml.pipeline import ml_pipeline
 
 class SummaryService:
     def __init__(self):

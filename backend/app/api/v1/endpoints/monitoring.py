@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from app.services.redis_service import redis_service
-from app.core.auth import get_current_user
+from services.redis_service import redis_service
+from core.auth import get_current_user
 from typing import Dict, Any
 
 router = APIRouter()

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status, Query
-from app.services.ai_analysis_service import ai_analysis_service
-from app.services.data_service import data_service
+from services.ai_analysis_service import ai_analysis_service
+from services.data_service import data_service
 from typing import Optional
 
 router = APIRouter()
