@@ -4,17 +4,10 @@ import os
 import httpx
 
 # Initialize Supabase client with service role key for backend operations
-# Add connection configuration for deployment environments
+# Remove options argument for compatibility with supabase-py
 supabase: Client = create_client(
     settings.SUPABASE_URL,
-    settings.SUPABASE_SERVICE_ROLE_KEY,  # Use service role key for backend operations
-    options={
-        'headers': {
-            'X-Client-Info': 'supabase-py/2.16.0'
-        },
-        'timeout': httpx.Timeout(30.0, connect=10.0),  # 30s total, 10s connect timeout
-        'limits': httpx.Limits(max_keepalive_connections=5, max_connections=10)
-    }
+    settings.SUPABASE_SERVICE_ROLE_KEY
 )
 
 def get_supabase_client() -> Client:
@@ -25,14 +18,7 @@ def get_supabase_anon_client() -> Client:
     """Get Supabase client instance with anon key for user operations"""
     return create_client(
         settings.SUPABASE_URL,
-        settings.SUPABASE_ANON_KEY,
-        options={
-            'headers': {
-                'X-Client-Info': 'supabase-py/2.16.0'
-            },
-            'timeout': httpx.Timeout(30.0, connect=10.0),  # 30s total, 10s connect timeout
-            'limits': httpx.Limits(max_keepalive_connections=5, max_connections=10)
-        }
+        settings.SUPABASE_ANON_KEY
     )
 
 def get_user_id_from_token(token: str) -> str:
