@@ -284,10 +284,17 @@ class DatabaseService:
             # Use the UUID id from the session, not the text session_id
             session_uuid = session_info['id']
             
+            # If model_id is provided, get the UUID id from trained_models table
+            model_uuid = None
+            if model_id:
+                model_info = await self.get_model_by_id(model_id, user_id)
+                if model_info:
+                    model_uuid = model_info['id']  # Use the UUID id from trained_models
+            
             summary_record = {
                 'user_id': user_id,
                 'session_id': session_uuid,  # Use the UUID id from analysis_sessions
-                'model_id': model_id,
+                'model_id': model_uuid,  # Use the UUID id from trained_models if available
                 'summary_type': 'complete',  # Add the required summary_type field
                 'content': summary_data['data_summary'],  # Add the required content field
                 'data_summary': summary_data['data_summary'],
