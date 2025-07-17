@@ -223,25 +223,38 @@ async def get_model_features(
         if not session_id:
             raise HTTPException(status_code=404, detail="Session not found for this model")
         
-        # Get data profile from the session
-        from app.services.data_service import data_service
-        try:
-            profile_data = data_service.profile_data(session_id)
-            schema = profile_data['schema']
-        except Exception as e:
-            # Fallback: try to get from database metadata
-            session_info = await database_service.get_session_by_id(session_id, current_user["id"])
-            if not session_info or 'metadata' not in session_info:
+        # Get session info from database
+        session_info = await database_service.get_session_by_id(session_id, current_user["id"])
+        if not session_info:
+            raise HTTPException(status_code=404, detail="Session not found")
+        
+        # Get schema from session metadata
+        metadata = session_info.get('metadata', {})
+        if 'data_insights' not in metadata:
+            # Try to get from data_insights table
+            data_insights = await database_service.get_data_insights(session_id, current_user["id"])
+            if not data_insights:
                 raise HTTPException(status_code=404, detail="Data profile not found")
             
-            # Try to get schema from metadata
-            metadata = session_info.get('metadata', {})
-            if 'data_insights' not in metadata:
-                raise HTTPException(status_code=404, detail="Data profile not found")
-            
-            # Create basic schema from available data
+            # Create basic schema from feature importance
             schema = []
-            # This is a fallback - we'll create basic feature info
+            feature_importance = model.get('feature_importance', {})
+            for feature_name in feature_importance.keys():
+                schema.append({
+                    'name': feature_name,
+                    'dtype': 'numerical',  # Default assumption
+                    'null_count': 0,
+                    'null_percentage': 0.0,
+                    'unique_count': 0,
+                    'is_constant': False,
+                    'is_high_cardinality': False,
+                    'sample_values': []
+                })
+        else:
+            # Get schema from metadata
+            data_insights = metadata['data_insights']
+            # Create schema from available data
+            schema = []
             feature_importance = model.get('feature_importance', {})
             for feature_name in feature_importance.keys():
                 schema.append({
