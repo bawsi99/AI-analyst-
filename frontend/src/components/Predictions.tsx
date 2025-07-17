@@ -106,7 +106,7 @@ const Predictions: React.FC<PredictionsProps> = ({ modelId, featureNames, onComp
           onChange={(e) => handleInputChange(rowIndex, featureName, e.target.value)}
           className="input-field"
         >
-          <option value="">Select {featureName}</option>
+          <option value="">Select {feature?.display_name || featureName}</option>
           {feature.sample_values.map((option, idx) => (
             <option key={idx} value={option}>
               {option}
@@ -121,7 +121,7 @@ const Predictions: React.FC<PredictionsProps> = ({ modelId, featureNames, onComp
           value={value}
           onChange={(e) => handleInputChange(rowIndex, featureName, e.target.value)}
           className="input-field"
-          placeholder={`Enter ${featureName}`}
+          placeholder={`Enter ${feature?.display_name || featureName}`}
           step="any"
         />
       );
@@ -132,7 +132,7 @@ const Predictions: React.FC<PredictionsProps> = ({ modelId, featureNames, onComp
           value={value}
           onChange={(e) => handleInputChange(rowIndex, featureName, e.target.value)}
           className="input-field"
-          placeholder={`Enter ${featureName}`}
+          placeholder={`Enter ${feature?.display_name || featureName}`}
         />
       );
     }
@@ -188,7 +188,7 @@ const Predictions: React.FC<PredictionsProps> = ({ modelId, featureNames, onComp
                         return (
                           <div key={field} className="flex-1 min-w-[180px]">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                              {field}
+                              {feature?.display_name || field}
                               {feature && (
                                 <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
                                   feature.dtype === 'numerical' ? 'bg-blue-100 text-blue-800' :

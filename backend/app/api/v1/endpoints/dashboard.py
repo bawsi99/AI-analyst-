@@ -259,14 +259,19 @@ def infer_feature_schema_from_importance(feature_importance: dict) -> list:
     for feature_name in feature_importance.keys():
         dtype = 'numerical'  # Default assumption
         sample_values = []
+        display_name = feature_name  # Default to original name
+        
         # Check if this is a one-hot encoded categorical feature
         if '_' in feature_name and not feature_name.replace('_', '').replace('.', '').isdigit():
             base_column = feature_name.split('_')[0]
             dtype = 'categorical'
+            display_name = base_column  # Use base column name for display
             # All categories for this base column
             sample_values = sorted(list(base_to_categories.get(base_column, [])))
+        
         schema.append({
-            'name': feature_name,
+            'name': feature_name,  # Keep original name for model compatibility
+            'display_name': display_name,  # Add display name for frontend
             'dtype': dtype,
             'null_count': 0,
             'null_percentage': 0.0,
@@ -385,6 +390,7 @@ async def get_model_features(
                 
                 model_features.append({
                     'name': column['name'],
+                    'display_name': column.get('display_name', column['name']),  # Use display_name if available
                     'dtype': frontend_dtype,
                     'unique_count': column.get('unique_count', 0),
                     'sample_values': column.get('sample_values', [])[:5],  # Limit to 5 sample values

@@ -155,6 +155,7 @@ export interface PredictionState {
 
 export interface ModelFeature {
   name: string;
+  display_name?: string;  // Optional display name for frontend
   dtype: string;
   unique_count: number;
   sample_values: string[];

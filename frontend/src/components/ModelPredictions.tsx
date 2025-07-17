@@ -142,7 +142,7 @@ const ModelPredictions: React.FC = () => {
           onChange={(e) => handleInputChange(rowIndex, feature.name, e.target.value)}
           className="input-field"
         >
-          <option value="">Select {feature.name}</option>
+                                    <option value="">Select {feature.display_name || feature.name}</option>
           {feature.sample_values.map((option, idx) => (
             <option key={idx} value={option}>
               {option}
@@ -157,7 +157,7 @@ const ModelPredictions: React.FC = () => {
           value={value}
           onChange={(e) => handleInputChange(rowIndex, feature.name, e.target.value)}
           className="input-field"
-          placeholder={`Enter ${feature.name}`}
+          placeholder={`Enter ${feature.display_name || feature.name}`}
           step="any"
         />
       );
@@ -168,7 +168,7 @@ const ModelPredictions: React.FC = () => {
           value={value}
           onChange={(e) => handleInputChange(rowIndex, feature.name, e.target.value)}
           className="input-field"
-          placeholder={`Enter ${feature.name}`}
+          placeholder={`Enter ${feature.display_name || feature.name}`}
         />
       );
     }
@@ -343,7 +343,7 @@ const ModelPredictions: React.FC = () => {
                             {modelFeatures.map((feature) => (
                               <div key={feature.name} className="flex-1 min-w-[200px]">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  {feature.name}
+                                  {feature.display_name || feature.name}
                                   <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
                                     feature.dtype === 'numerical' ? 'bg-blue-100 text-blue-800' :
                                     feature.dtype === 'categorical' ? 'bg-green-100 text-green-800' :
