@@ -184,7 +184,8 @@ const ModelPredictions: React.FC = () => {
       modelFeatures.forEach(f => {
         if (f.display_name === baseColumn && inputData[rowIndex]?.[f.name] === '1') {
           // Extract the category value from the feature name
-          const categoryValue = f.name.replace(`${baseColumn}_`, '');
+          // Remove the base column name and any remaining underscores
+          const categoryValue = f.name.replace(`${baseColumn}_`, '').replace(/_/g, ' ');
           selectedValue = categoryValue;
         }
       });
@@ -196,8 +197,10 @@ const ModelPredictions: React.FC = () => {
             const newValue = e.target.value;
             if (newValue) {
               // Find the corresponding one-hot encoded feature and set it to 1
+              // Convert the display value back to the feature name format
+              const featureValue = newValue.replace(/ /g, '_');
               const targetFeature = modelFeatures.find(f => 
-                f.display_name === baseColumn && f.name === `${baseColumn}_${newValue}`
+                f.display_name === baseColumn && f.name === `${baseColumn}_${featureValue}`
               );
               if (targetFeature) {
                 handleInputChange(rowIndex, targetFeature.name, '1');
@@ -214,11 +217,15 @@ const ModelPredictions: React.FC = () => {
           className="input-field"
         >
           <option value="">Select {feature.display_name || feature.name}</option>
-          {feature.sample_values.map((option, idx) => (
-            <option key={idx} value={option}>
-              {option}
-            </option>
-          ))}
+          {feature.sample_values.map((option, idx) => {
+            // Clean up the option value for display (remove underscores, capitalize)
+            const displayValue = option.replace(/_/g, ' ');
+            return (
+              <option key={idx} value={option}>
+                {displayValue}
+              </option>
+            );
+          })}
         </select>
       );
     } else if (feature.dtype === 'numerical') {
