@@ -19,6 +19,7 @@ class Settings(BaseSettings):
         "https://orthoaiassgnment-phi.vercel.app",  # Vercel frontend
         "https://orthoaiassgnment.vercel.app",      # Alternative Vercel domain
         "https://orthoaiassgnment-git-main-aaryan-manawats-projects.vercel.app",  # Vercel preview domain
+        "https://orthoaiassgnment-8qwz7a87u-aaryan-manawats-projects.vercel.app",  # Vercel preview domain
         "*"  # Allow all origins for development
     ]
     
