@@ -287,14 +287,23 @@ class DatabaseService:
             # If model_id is provided, get the UUID id from trained_models table
             model_uuid = None
             if model_id:
+                # Try to get the model by text model_id first
                 model_info = await self.get_model_by_id(model_id, user_id)
                 if model_info:
                     model_uuid = model_info['id']  # Use the UUID id from trained_models
+                else:
+                    # If not found, try a direct query to get the UUID id
+                    try:
+                        response = self.supabase.table('trained_models').select('id').eq('model_id', model_id).eq('user_id', user_id).execute()
+                        if response.data:
+                            model_uuid = response.data[0]['id']
+                    except Exception as lookup_error:
+                        print(f"Warning: Could not find model {model_id} for summary: {lookup_error}")
+                        # Continue without model_id if lookup fails
             
             summary_record = {
                 'user_id': user_id,
                 'session_id': session_uuid,  # Use the UUID id from analysis_sessions
-                'model_id': model_uuid,  # Use the UUID id from trained_models if available
                 'summary_type': 'complete',  # Add the required summary_type field
                 'content': summary_data['data_summary'],  # Add the required content field
                 'data_summary': summary_data['data_summary'],
@@ -302,6 +311,10 @@ class DatabaseService:
                 'key_insights': summary_data['key_insights'],
                 'recommendations': summary_data['recommendations']
             }
+            
+            # Only add model_id if we successfully found the model UUID
+            if model_uuid:
+                summary_record['model_id'] = model_uuid
             
             response = self.supabase.table('analysis_summaries').insert(summary_record).execute()
             return response.data[0]['id']
