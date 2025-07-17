@@ -43,8 +43,20 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=[
+        "Accept",
+        "Accept-Language",
+        "Content-Language",
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Origin",
+        "Access-Control-Request-Method",
+        "Access-Control-Request-Headers",
+    ],
+    expose_headers=["*"],
+    max_age=86400,  # Cache preflight requests for 24 hours
 )
 
 # Include API routes
@@ -81,6 +93,22 @@ async def cors_test():
     return {
         "message": "CORS test successful",
         "cors_origins": settings.CORS_ORIGINS,
+        "timestamp": "2024-01-01T00:00:00Z"
+    }
+
+@app.options("/cors-test")
+async def cors_test_options():
+    """Handle preflight requests for CORS test"""
+    return {"message": "Preflight request handled"}
+
+@app.get("/debug/cors")
+async def debug_cors():
+    """Debug endpoint to check CORS configuration"""
+    return {
+        "cors_origins": settings.CORS_ORIGINS,
+        "cors_origins_count": len(settings.CORS_ORIGINS),
+        "has_wildcard": "*" in settings.CORS_ORIGINS,
+        "vercel_domains": [origin for origin in settings.CORS_ORIGINS if "vercel.app" in origin],
         "timestamp": "2024-01-01T00:00:00Z"
     }
 
