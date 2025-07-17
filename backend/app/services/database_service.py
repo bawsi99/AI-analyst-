@@ -170,7 +170,13 @@ class DatabaseService:
         try:
             update_data = {'status': status}
             if metadata:
-                update_data['metadata'] = metadata
+                # Get current metadata and merge with new metadata
+                session_info = await self.get_session_by_id(session_id, user_id)
+                current_metadata = session_info.get('metadata', {}) if session_info else {}
+                
+                # Merge current metadata with new metadata
+                current_metadata.update(metadata)
+                update_data['metadata'] = current_metadata
             
             self.supabase.table('analysis_sessions').update(update_data).eq('session_id', session_id).eq('user_id', user_id).execute()
             return True

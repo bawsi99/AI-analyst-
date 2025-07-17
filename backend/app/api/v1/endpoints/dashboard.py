@@ -251,11 +251,28 @@ def infer_feature_schema_from_importance(feature_importance: dict) -> list:
     base_to_categories = {}
     processed_base_columns = set()
     
+    # Common numerical feature patterns that might contain underscores
+    numerical_patterns = [
+        'total_charges', 'monthly_charges', 'total_amount', 'total_value',
+        'avg_', 'mean_', 'std_', 'min_', 'max_', 'sum_', 'count_',
+        'price_', 'cost_', 'amount_', 'value_', 'score_', 'rate_',
+        'percentage_', 'ratio_', 'index_', 'level_', 'grade_', 'rank_'
+    ]
+    
     for feature_name in feature_importance.keys():
+        # Check if this looks like a one-hot encoded feature
         if '_' in feature_name and not feature_name.replace('_', '').replace('.', '').isdigit():
-            base_column = feature_name.split('_')[0]
-            category_value = '_'.join(feature_name.split('_')[1:])
-            base_to_categories.setdefault(base_column, set()).add(category_value)
+            # Check if it's a known numerical pattern
+            is_numerical_pattern = any(feature_name.startswith(pattern) for pattern in numerical_patterns)
+            
+            if not is_numerical_pattern:
+                # This might be a one-hot encoded feature
+                base_column = feature_name.split('_')[0]
+                category_value = '_'.join(feature_name.split('_')[1:])
+                base_to_categories.setdefault(base_column, set()).add(category_value)
+            else:
+                # This is a numerical feature with underscore, add it directly
+                base_to_categories[feature_name] = set()
         else:
             # This is a numerical feature, add it directly
             base_to_categories[feature_name] = set()
@@ -268,31 +285,55 @@ def infer_feature_schema_from_importance(feature_importance: dict) -> list:
         
         # Check if this is a one-hot encoded categorical feature
         if '_' in feature_name and not feature_name.replace('_', '').replace('.', '').isdigit():
-            base_column = feature_name.split('_')[0]
+            # Check if it's a known numerical pattern
+            is_numerical_pattern = any(feature_name.startswith(pattern) for pattern in numerical_patterns)
             
-            # Only process this feature if we haven't already processed this base column
-            if base_column not in processed_base_columns:
-                dtype = 'categorical'
-                display_name = base_column  # Use base column name for display
-                # All categories for this base column
-                sample_values = sorted(list(base_to_categories.get(base_column, [])))
-                processed_base_columns.add(base_column)
+            if not is_numerical_pattern:
+                # This is likely a one-hot encoded feature
+                base_column = feature_name.split('_')[0]
                 
-                # For grouped categorical features, use the base column name as the name
-                schema.append({
-                    'name': base_column,  # Use base column name for grouped features
-                    'display_name': display_name,  # Add display name for frontend
-                    'dtype': dtype,
-                    'null_count': 0,
-                    'null_percentage': 0.0,
-                    'unique_count': len(sample_values) if sample_values else 0,
-                    'is_constant': False,
-                    'is_high_cardinality': False,
-                    'sample_values': sample_values
-                })
+                # Only process this feature if we haven't already processed this base column
+                if base_column not in processed_base_columns:
+                    dtype = 'categorical'
+                    display_name = base_column  # Use base column name for display
+                    # All categories for this base column
+                    sample_values = sorted(list(base_to_categories.get(base_column, [])))
+                    processed_base_columns.add(base_column)
+                    
+                    # For grouped categorical features, use the base column name as the name
+                    schema.append({
+                        'name': base_column,  # Use base column name for grouped features
+                        'display_name': display_name,  # Add display name for frontend
+                        'dtype': dtype,
+                        'null_count': 0,
+                        'null_percentage': 0.0,
+                        'unique_count': len(sample_values) if sample_values else 0,
+                        'is_constant': False,
+                        'is_high_cardinality': False,
+                        'sample_values': sample_values
+                    })
+                else:
+                    # Skip this feature as we've already processed the base column
+                    continue
             else:
-                # Skip this feature as we've already processed the base column
-                continue
+                # This is a numerical feature with underscore pattern
+                if feature_name not in processed_base_columns:
+                    processed_base_columns.add(feature_name)
+                    
+                    schema.append({
+                        'name': feature_name,  # Keep original name for numerical features
+                        'display_name': display_name,  # Add display name for frontend
+                        'dtype': dtype,
+                        'null_count': 0,
+                        'null_percentage': 0.0,
+                        'unique_count': len(sample_values) if sample_values else 0,
+                        'is_constant': False,
+                        'is_high_cardinality': False,
+                        'sample_values': sample_values
+                    })
+                else:
+                    # Skip duplicate numerical features
+                    continue
         else:
             # This is a numerical feature
             if feature_name not in processed_base_columns:
@@ -389,20 +430,29 @@ async def get_model_features(
         
         print(f"DEBUG: Session found - {session_info}")
         
-        # Get schema from session metadata
+        # Get schema from session metadata - use original data schema instead of inferring from feature importance
         metadata = session_info.get('metadata', {})
         feature_importance = model.get('feature_importance', {})
-        if 'data_insights' not in metadata:
+        
+        # Try to get the original schema from the session
+        original_schema = None
+        if 'schema' in metadata:
+            print(f"DEBUG: Using schema from session metadata")
+            original_schema = metadata['schema']
+        else:
             # Try to get from data_insights table
             data_insights = await database_service.get_data_insights(session_id, current_user["id"])
-            if not data_insights:
-                print(f"DEBUG: No data insights found - creating basic schema from feature importance")
-                schema = infer_feature_schema_from_importance(feature_importance)
+            if data_insights and 'schema' in data_insights:
+                print(f"DEBUG: Using schema from data_insights table")
+                original_schema = data_insights['schema']
             else:
-                print(f"DEBUG: Data insights found from table")
-                schema = infer_feature_schema_from_importance(feature_importance)
+                print(f"DEBUG: No original schema found - falling back to feature importance inference")
+                original_schema = infer_feature_schema_from_importance(feature_importance)
+        
+        # Use the original schema if available, otherwise fall back to inference
+        if original_schema and isinstance(original_schema, list):
+            schema = original_schema
         else:
-            print(f"DEBUG: Data insights found in metadata")
             schema = infer_feature_schema_from_importance(feature_importance)
         
         # Get target column and excluded columns
@@ -415,19 +465,33 @@ async def get_model_features(
         # (exclude target column and excluded columns)
         model_features = []
         for column in schema:
-            if (column['name'] != target_column and 
-                column['name'] not in excluded_columns):
-                
-                # Use the data type from the schema (already frontend-friendly)
-                frontend_dtype = column['dtype']
+            # Handle both dict and object formats
+            if isinstance(column, dict):
+                column_name = column.get('name')
+                column_dtype = column.get('dtype', 'numerical')
+                column_display_name = column.get('display_name', column_name)
+                column_unique_count = column.get('unique_count', 0)
+                column_sample_values = column.get('sample_values', [])
+                column_null_percentage = column.get('null_percentage', 0.0)
+            else:
+                # Handle ColumnSchema objects
+                column_name = getattr(column, 'name', None)
+                column_dtype = getattr(column, 'dtype', 'numerical')
+                column_display_name = getattr(column, 'display_name', column_name)
+                column_unique_count = getattr(column, 'unique_count', 0)
+                column_sample_values = getattr(column, 'sample_values', [])
+                column_null_percentage = getattr(column, 'null_percentage', 0.0)
+            
+            if (column_name and column_name != target_column and 
+                column_name not in excluded_columns):
                 
                 model_features.append({
-                    'name': column['name'],
-                    'display_name': column.get('display_name', column['name']),  # Use display_name if available
-                    'dtype': frontend_dtype,
-                    'unique_count': column.get('unique_count', 0),
-                    'sample_values': column.get('sample_values', [])[:5],  # Limit to 5 sample values
-                    'null_percentage': column.get('null_percentage', 0.0)
+                    'name': column_name,
+                    'display_name': column_display_name,
+                    'dtype': column_dtype,
+                    'unique_count': column_unique_count,
+                    'sample_values': column_sample_values[:5] if column_sample_values else [],  # Limit to 5 sample values
+                    'null_percentage': column_null_percentage
                 })
         
         print(f"DEBUG: Model features count: {len(model_features)}")

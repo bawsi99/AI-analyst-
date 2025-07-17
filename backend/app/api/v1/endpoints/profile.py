@@ -25,7 +25,7 @@ async def get_profile(
         # Generate profile
         profile_data = data_service.profile_data(session_id)
         
-        # Save detailed insights to database
+        # Save detailed insights and schema to database
         insights_data = {
             'outliers': profile_data['insights'].outliers,
             'skewness': profile_data['insights'].skewness,
@@ -41,7 +41,16 @@ async def get_profile(
             'data_leakage': profile_data['insights'].data_leakage
         }
         
+        # Save insights to database
         await database_service.save_data_insights(session_id, current_user["id"], insights_data)
+        
+        # Save schema to session metadata
+        await database_service.update_session_status(
+            session_id=session_id,
+            user_id=current_user["id"],
+            status='profiled',
+            metadata={'schema': profile_data['schema']}
+        )
         
         return {
             "message": "Data profile generated successfully",
