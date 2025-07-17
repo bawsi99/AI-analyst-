@@ -7,7 +7,33 @@ import time
 
 class DatabaseService:
     def __init__(self):
-        self.supabase = get_supabase_client()
+        self.supabase = None
+        self._initialize_supabase()
+    
+    def _initialize_supabase(self):
+        """Initialize Supabase client with retry logic"""
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                self.supabase = get_supabase_client()
+                # Test the connection
+                self.supabase.table('user_profiles').select('id').limit(1).execute()
+                print("✅ Supabase connection established")
+                return
+            except Exception as e:
+                print(f"⚠️ Supabase connection attempt {attempt + 1}/{max_retries} failed: {e}")
+                if attempt == max_retries - 1:
+                    print("❌ Failed to initialize Supabase client after all retries")
+                    raise
+                import time
+                time.sleep(2 ** attempt)  # Exponential backoff
+    
+    def _ensure_supabase_client(self):
+        """Ensure Supabase client is available"""
+        if self.supabase is None:
+            print("⚠️ Supabase client not initialized, attempting to reconnect...")
+            self._initialize_supabase()
+        return self.supabase
     
     async def _retry_operation(self, operation, max_retries=3, delay=1.0):
         """Retry database operations with exponential backoff"""
@@ -36,7 +62,8 @@ class DatabaseService:
     async def get_user_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
         """Get user profile by user ID"""
         try:
-            response = self.supabase.table('user_profiles').select('*').eq('id', user_id).execute()
+            supabase = self._ensure_supabase_client()
+            response = supabase.table('user_profiles').select('*').eq('id', user_id).execute()
             if response.data:
                 return response.data[0]
             return None

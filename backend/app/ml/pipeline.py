@@ -147,10 +147,22 @@ class MLPipeline:
         
         # Generate model ID and save
         model_id = str(uuid.uuid4())
+        
+        # Ensure model storage directory exists
+        os.makedirs(settings.MODEL_STORAGE_PATH, exist_ok=True)
+        
         model_path = os.path.join(settings.MODEL_STORAGE_PATH, f"{model_id}.joblib")
         
-        # Save pipeline
-        joblib.dump(full_pipeline, model_path)
+        # Save pipeline with error handling
+        try:
+            joblib.dump(full_pipeline, model_path)
+        except Exception as e:
+            print(f"Error saving model to {model_path}: {e}")
+            # Try alternative location if primary fails
+            alt_path = os.path.join("/tmp", f"{model_id}.joblib")
+            print(f"Trying alternative path: {alt_path}")
+            joblib.dump(full_pipeline, alt_path)
+            model_path = alt_path
         
         # Store model info
         training_time = (datetime.now() - start_time).total_seconds()
@@ -274,7 +286,12 @@ class MLPipeline:
             # Try to load from file
             model_path = os.path.join(settings.MODEL_STORAGE_PATH, f"{model_id}.joblib")
             if not os.path.exists(model_path):
-                raise ValueError(f"Model {model_id} not found")
+                # Try alternative location
+                alt_path = os.path.join("/tmp", f"{model_id}.joblib")
+                if os.path.exists(alt_path):
+                    model_path = alt_path
+                else:
+                    raise ValueError(f"Model {model_id} not found in {settings.MODEL_STORAGE_PATH} or /tmp")
             
             # Load basic model info from database or create default
             model_info = {
@@ -282,21 +299,33 @@ class MLPipeline:
                 'target_column': 'unknown'
             }
         
-        # Load model
-        pipeline = joblib.load(model_path)
+        # Load model with error handling
+        try:
+            pipeline = joblib.load(model_path)
+        except Exception as e:
+            print(f"Error loading model from {model_path}: {e}")
+            raise ValueError(f"Failed to load model {model_id}: {str(e)}")
         
         # Convert data to DataFrame
-        df = pd.DataFrame(data)
+        try:
+            df = pd.DataFrame(data)
+        except Exception as e:
+            raise ValueError(f"Failed to convert input data to DataFrame: {str(e)}")
         
-        # Make predictions
-        predictions = pipeline.predict(df)
+        # Make predictions with error handling
+        try:
+            predictions = pipeline.predict(df)
+        except Exception as e:
+            print(f"Error making predictions: {e}")
+            raise ValueError(f"Failed to make predictions: {str(e)}")
         
         # Get probabilities for classification
         probabilities = None
         if model_info and model_info.get('model_type') == 'classification':
             try:
                 probabilities = pipeline.predict_proba(df).tolist()
-            except:
+            except Exception as e:
+                print(f"Warning: Could not get probabilities: {e}")
                 pass
         
         # Calculate confidence scores (for classification, use max probability)

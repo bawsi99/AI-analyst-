@@ -14,21 +14,37 @@ class DataService:
     def save_uploaded_file(self, file_content: bytes, filename: str) -> str:
         """Save uploaded file and return session ID"""
         session_id = str(uuid.uuid4())
-        file_path = os.path.join(settings.UPLOAD_STORAGE_PATH, f"{session_id}_{filename}")
         
-        with open(file_path, 'wb') as f:
-            f.write(file_content)
+        # Create session-specific directory
+        session_dir = os.path.join(settings.UPLOAD_STORAGE_PATH, session_id)
+        os.makedirs(session_dir, exist_ok=True)
+        
+        # Save file in session directory
+        file_path = os.path.join(session_dir, filename)
+        
+        try:
+            with open(file_path, 'wb') as f:
+                f.write(file_content)
+                
+            # Store session info
+            self.sessions[session_id] = {
+                'filename': filename,
+                'file_path': file_path,
+                'upload_time': datetime.utcnow(),
+                'file_size': len(file_content),
+                'status': 'uploaded'
+            }
             
-        # Store session info
-        self.sessions[session_id] = {
-            'filename': filename,
-            'file_path': file_path,
-            'upload_time': datetime.utcnow(),
-            'file_size': len(file_content),
-            'status': 'uploaded'
-        }
-        
-        return session_id
+            return session_id
+        except Exception as e:
+            print(f"Error saving uploaded file: {e}")
+            # Clean up directory if file save failed
+            try:
+                import shutil
+                shutil.rmtree(session_dir, ignore_errors=True)
+            except:
+                pass
+            raise ValueError(f"Failed to save uploaded file: {str(e)}")
     
     def load_data(self, session_id: str) -> pd.DataFrame:
         """Load data from session"""
@@ -45,7 +61,27 @@ class DataService:
     def _reconstruct_session_from_file(self, session_id: str):
         """Try to reconstruct session info from file system"""
         try:
-            # Look for files that start with the session_id
+            # Look for session directory
+            session_dir = os.path.join(settings.UPLOAD_STORAGE_PATH, session_id)
+            if os.path.exists(session_dir) and os.path.isdir(session_dir):
+                # Look for files in the session directory
+                for filename in os.listdir(session_dir):
+                    file_path = os.path.join(session_dir, filename)
+                    if os.path.isfile(file_path):
+                        # Get file stats
+                        file_stats = os.stat(file_path)
+                        
+                        self.sessions[session_id] = {
+                            'filename': filename,
+                            'file_path': file_path,
+                            'upload_time': datetime.fromtimestamp(file_stats.st_mtime),
+                            'file_size': file_stats.st_size,
+                            'status': 'uploaded'
+                        }
+                        print(f"Reconstructed session {session_id} from file: {filename}")
+                        return
+                        
+            # Fallback: look for files that start with the session_id (old format)
             upload_dir = settings.UPLOAD_STORAGE_PATH
             if os.path.exists(upload_dir):
                 for filename in os.listdir(upload_dir):
@@ -65,7 +101,7 @@ class DataService:
                                 'file_size': file_stats.st_size,
                                 'status': 'uploaded'
                             }
-                            print(f"Reconstructed session {session_id} from file: {filename}")
+                            print(f"Reconstructed session {session_id} from old format file: {filename}")
                             return
                             
             print(f"Could not find file for session {session_id}")

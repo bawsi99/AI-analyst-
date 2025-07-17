@@ -6,6 +6,30 @@ import os
 from app.core.config import settings
 from app.api.v1.api import api_router
 
+# Ensure required directories exist at startup
+def ensure_directories():
+    """Ensure all required directories exist and are writable"""
+    directories = [
+        settings.UPLOAD_STORAGE_PATH,
+        settings.MODEL_STORAGE_PATH,
+        "/tmp/matplotlib"  # For matplotlib cache
+    ]
+    
+    for directory in directories:
+        try:
+            os.makedirs(directory, exist_ok=True)
+            # Test if directory is writable
+            test_file = os.path.join(directory, ".test_write")
+            with open(test_file, 'w') as f:
+                f.write("test")
+            os.remove(test_file)
+            print(f"✅ Directory {directory} is ready")
+        except Exception as e:
+            print(f"⚠️ Warning: Directory {directory} is not writable: {e}")
+
+# Run directory checks at startup
+ensure_directories()
+
 app = FastAPI(
     title="Mini AI Analyst API",
     description="A comprehensive AI-powered data analysis and machine learning service",
