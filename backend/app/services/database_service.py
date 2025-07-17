@@ -192,6 +192,12 @@ class DatabaseService:
     async def create_trained_model(self, user_id: str, session_id: str, model_data: Dict[str, Any]) -> str:
         """Create a new trained model record"""
         try:
+            # First, check if a model with this model_id already exists
+            existing_model = await self.get_model_by_id(model_data['model_id'], user_id)
+            if existing_model:
+                print(f"Model with model_id {model_data['model_id']} already exists, returning existing model")
+                return existing_model['id']
+            
             # First, get the session to get its UUID id
             session_info = await self.get_session_by_id(session_id, user_id)
             if not session_info:
@@ -234,8 +240,25 @@ class DatabaseService:
             
             return await self._execute_with_retry(insert_model, max_retries=3)
         except Exception as e:
-            print(f"Error creating trained model: {e}")
-            raise
+            # Check if this is a duplicate key error
+            error_str = str(e)
+            if 'duplicate key value violates unique constraint' in error_str and 'trained_models_model_id_key' in error_str:
+                print(f"Duplicate model_id detected: {model_data['model_id']}")
+                # Try to get the existing model and return its ID
+                try:
+                    existing_model = await self.get_model_by_id(model_data['model_id'], user_id)
+                    if existing_model:
+                        print(f"Retrieved existing model with model_id {model_data['model_id']}")
+                        return existing_model['id']
+                    else:
+                        print(f"Model_id {model_data['model_id']} exists but not found by user_id {user_id}")
+                        raise ValueError(f"Model with model_id {model_data['model_id']} already exists but not accessible")
+                except Exception as lookup_error:
+                    print(f"Error looking up existing model: {lookup_error}")
+                    raise ValueError(f"Model with model_id {model_data['model_id']} already exists")
+            else:
+                print(f"Error creating trained model: {e}")
+                raise
     
     async def get_user_models(self, user_id: str) -> List[Dict[str, Any]]:
         """Get all trained models for a user"""
