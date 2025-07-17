@@ -17,7 +17,12 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=[
+        "*",  # Allow all origins for development
+        "https://orthoaiassgnment-3osm.vercel.app",
+        "https://orthoaiassgnment-3osm-git-main-aaryan-manawats-projects.vercel.app",
+        "https://orthoaiassgnment-3osm-hb729wy34-aaryan-manawats-projects.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
