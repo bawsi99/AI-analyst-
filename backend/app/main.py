@@ -42,10 +42,14 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "*",  # Allow all origins for development
+        "https://orthoaiassgnment.vercel.app",
+        "https://orthoaiassgnment-git-main-aaryan-manawats-projects.vercel.app",
+        "https://orthoaiassgnment-ezjyoxl4s-aaryan-manawats-projects.vercel.app",
         "https://orthoaiassgnment-3osm.vercel.app",
         "https://orthoaiassgnment-3osm-git-main-aaryan-manawats-projects.vercel.app",
-        "https://orthoaiassgnment-3osm-hb729wy34-aaryan-manawats-projects.vercel.app"
+        "https://orthoaiassgnment-3osm-hb729wy34-aaryan-manawats-projects.vercel.app",
+        "http://localhost:3000",  # For local development
+        "http://localhost:3001",  # For local development
     ],
     allow_credentials=True,
     allow_methods=["*"],
