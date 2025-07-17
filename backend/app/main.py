@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
 import os
 
 from app.core.config import settings
@@ -54,10 +55,31 @@ app.add_middleware(
         "Origin",
         "Access-Control-Request-Method",
         "Access-Control-Request-Headers",
+        "Content-Length",
+        "Cache-Control",
     ],
     expose_headers=["*"],
     max_age=86400,  # Cache preflight requests for 24 hours
 )
+
+# Request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all incoming requests for debugging"""
+    import time
+    start_time = time.time()
+    
+    # Log request details
+    print(f"Request: {request.method} {request.url}")
+    print(f"Headers: {dict(request.headers)}")
+    
+    response = await call_next(request)
+    
+    # Log response details
+    process_time = time.time() - start_time
+    print(f"Response: {response.status_code} - {process_time:.3f}s")
+    
+    return response
 
 # Include API routes
 app.include_router(api_router, prefix="/api/v1")
@@ -84,7 +106,9 @@ async def health_check():
     return {
         "status": "healthy" if redis_healthy else "degraded",
         "service": "ai-analyst-api",
-        "redis": "healthy" if redis_healthy else "unhealthy"
+        "redis": "healthy" if redis_healthy else "unhealthy",
+        "cors_enabled": True,
+        "cors_origins_count": len(settings.CORS_ORIGINS)
     }
 
 @app.get("/cors-test")
@@ -111,6 +135,18 @@ async def debug_cors():
         "vercel_domains": [origin for origin in settings.CORS_ORIGINS if "vercel.app" in origin],
         "timestamp": "2024-01-01T00:00:00Z"
     }
+
+# Global exception handler for better error responses
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler to ensure consistent error responses"""
+    return JSONResponse(
+        status_code=500,
+        content={
+            "detail": "Internal server error",
+            "message": str(exc) if settings.DEBUG else "An unexpected error occurred"
+        }
+    )
 
 if __name__ == "__main__":
     import uvicorn

@@ -58,6 +58,9 @@ class Settings(BaseSettings):
     # Gemini LLM Configuration
     GEMINI_LLM_API_KEY: str = ""
     
+    # Debug Configuration
+    DEBUG: bool = False
+    
     model_config = {
         "env_file": ".env",
         "case_sensitive": True
