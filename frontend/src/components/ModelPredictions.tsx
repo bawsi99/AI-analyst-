@@ -56,7 +56,14 @@ const ModelPredictions: React.FC = () => {
       setModelFeatures(response.features);
       
       // Initialize input data with empty values for each feature
-      const initialData = response.features.reduce((acc, feature) => ({ ...acc, [feature.name]: '' }), {});
+      const initialData = response.features.reduce((acc, feature) => {
+        // For categorical features, initialize with '0' (one-hot encoding)
+        if (feature.dtype === 'categorical') {
+          return { ...acc, [feature.name]: '0' };
+        } else {
+          return { ...acc, [feature.name]: '' };
+        }
+      }, {});
       setInputData([initialData]);
     } catch (error: any) {
       toast.error('Failed to load model features');
@@ -78,7 +85,14 @@ const ModelPredictions: React.FC = () => {
 
   const handleAddRow = () => {
     if (modelFeatures.length > 0) {
-      const newRow = modelFeatures.reduce((acc, feature) => ({ ...acc, [feature.name]: '' }), {});
+      const newRow = modelFeatures.reduce((acc, feature) => {
+        // For categorical features, initialize with '0' (one-hot encoding)
+        if (feature.dtype === 'categorical') {
+          return { ...acc, [feature.name]: '0' };
+        } else {
+          return { ...acc, [feature.name]: '' };
+        }
+      }, {});
       setInputData([...inputData, newRow]);
     } else {
       setInputData([...inputData, {}]);
@@ -93,7 +107,32 @@ const ModelPredictions: React.FC = () => {
 
   const handleInputChange = (rowIndex: number, field: string, value: string) => {
     const newData = [...inputData];
-    newData[rowIndex] = { ...newData[rowIndex], [field]: value };
+    const currentRow = { ...newData[rowIndex] };
+    
+    // Check if this is a categorical feature with one-hot encoding
+    const feature = modelFeatures.find(f => f.name === field);
+    if (feature && feature.dtype === 'categorical' && feature.sample_values.length > 0) {
+      // This is a one-hot encoded categorical feature
+      // Clear all related one-hot encoded columns first
+      const baseColumn = feature.display_name || field;
+      modelFeatures.forEach(f => {
+        if (f.display_name === baseColumn && f.name !== field) {
+          currentRow[f.name] = '0';
+        }
+      });
+      
+      // Set the selected value to 1 and others to 0
+      if (value) {
+        currentRow[field] = '1';
+      } else {
+        currentRow[field] = '0';
+      }
+    } else {
+      // Regular numerical or text field
+      currentRow[field] = value;
+    }
+    
+    newData[rowIndex] = currentRow;
     setInputData(newData);
   };
 
@@ -136,13 +175,45 @@ const ModelPredictions: React.FC = () => {
     const value = inputData[rowIndex]?.[feature.name] || '';
     
     if (feature.dtype === 'categorical' && feature.sample_values.length > 0) {
+      // For categorical features, we need to determine the current selected value
+      // by checking which one-hot encoded column is set to '1'
+      const baseColumn = feature.display_name || feature.name;
+      let selectedValue = '';
+      
+      // Find the currently selected category for this base column
+      modelFeatures.forEach(f => {
+        if (f.display_name === baseColumn && inputData[rowIndex]?.[f.name] === '1') {
+          // Extract the category value from the feature name
+          const categoryValue = f.name.replace(`${baseColumn}_`, '');
+          selectedValue = categoryValue;
+        }
+      });
+      
       return (
         <select
-          value={value}
-          onChange={(e) => handleInputChange(rowIndex, feature.name, e.target.value)}
+          value={selectedValue}
+          onChange={(e) => {
+            const newValue = e.target.value;
+            if (newValue) {
+              // Find the corresponding one-hot encoded feature and set it to 1
+              const targetFeature = modelFeatures.find(f => 
+                f.display_name === baseColumn && f.name === `${baseColumn}_${newValue}`
+              );
+              if (targetFeature) {
+                handleInputChange(rowIndex, targetFeature.name, '1');
+              }
+            } else {
+              // Clear all related one-hot encoded features
+              modelFeatures.forEach(f => {
+                if (f.display_name === baseColumn) {
+                  handleInputChange(rowIndex, f.name, '0');
+                }
+              });
+            }
+          }}
           className="input-field"
         >
-                                    <option value="">Select {feature.display_name || feature.name}</option>
+          <option value="">Select {feature.display_name || feature.name}</option>
           {feature.sample_values.map((option, idx) => (
             <option key={idx} value={option}>
               {option}
@@ -340,26 +411,37 @@ const ModelPredictions: React.FC = () => {
                       {inputData.map((row, rowIndex) => (
                         <div key={rowIndex} className="overflow-x-auto">
                           <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg min-w-max">
-                            {modelFeatures.map((feature) => (
-                              <div key={feature.name} className="flex-1 min-w-[200px]">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  {feature.display_name || feature.name}
-                                  <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
-                                    feature.dtype === 'numerical' ? 'bg-blue-100 text-blue-800' :
-                                    feature.dtype === 'categorical' ? 'bg-green-100 text-green-800' :
-                                    'bg-gray-100 text-gray-800'
-                                  }`}>
-                                    {feature.dtype}
-                                  </span>
-                                </label>
-                                {renderInputField(feature, rowIndex)}
-                                {feature.dtype === 'categorical' && feature.sample_values.length > 0 && (
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    {feature.unique_count} unique values
-                                  </p>
-                                )}
-                              </div>
-                            ))}
+                            {(() => {
+                              // Group features by display_name to avoid duplicates
+                              const groupedFeatures = new Map();
+                              modelFeatures.forEach(feature => {
+                                const key = feature.display_name || feature.name;
+                                if (!groupedFeatures.has(key)) {
+                                  groupedFeatures.set(key, feature);
+                                }
+                              });
+                              
+                              return Array.from(groupedFeatures.values()).map((feature) => (
+                                <div key={feature.name} className="flex-1 min-w-[200px]">
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    {feature.display_name || feature.name}
+                                    <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                                      feature.dtype === 'numerical' ? 'bg-blue-100 text-blue-800' :
+                                      feature.dtype === 'categorical' ? 'bg-green-100 text-green-800' :
+                                      'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {feature.dtype}
+                                    </span>
+                                  </label>
+                                  {renderInputField(feature, rowIndex)}
+                                  {feature.dtype === 'categorical' && feature.sample_values.length > 0 && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {feature.unique_count} unique values
+                                    </p>
+                                  )}
+                                </div>
+                              ));
+                            })()}
                             {inputData.length > 1 && (
                               <button
                                 onClick={() => handleRemoveRow(rowIndex)}

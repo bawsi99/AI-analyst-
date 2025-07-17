@@ -249,11 +249,16 @@ def infer_feature_schema_from_importance(feature_importance: dict) -> list:
     """
     # First, collect all base columns and their categories
     base_to_categories = {}
+    processed_base_columns = set()
+    
     for feature_name in feature_importance.keys():
         if '_' in feature_name and not feature_name.replace('_', '').replace('.', '').isdigit():
             base_column = feature_name.split('_')[0]
             category_value = '_'.join(feature_name.split('_')[1:])
             base_to_categories.setdefault(base_column, set()).add(category_value)
+        else:
+            # This is a numerical feature, add it directly
+            base_to_categories[feature_name] = set()
     
     schema = []
     for feature_name in feature_importance.keys():
@@ -264,10 +269,24 @@ def infer_feature_schema_from_importance(feature_importance: dict) -> list:
         # Check if this is a one-hot encoded categorical feature
         if '_' in feature_name and not feature_name.replace('_', '').replace('.', '').isdigit():
             base_column = feature_name.split('_')[0]
-            dtype = 'categorical'
-            display_name = base_column  # Use base column name for display
-            # All categories for this base column
-            sample_values = sorted(list(base_to_categories.get(base_column, [])))
+            
+            # Only process this feature if we haven't already processed this base column
+            if base_column not in processed_base_columns:
+                dtype = 'categorical'
+                display_name = base_column  # Use base column name for display
+                # All categories for this base column
+                sample_values = sorted(list(base_to_categories.get(base_column, [])))
+                processed_base_columns.add(base_column)
+            else:
+                # Skip this feature as we've already processed the base column
+                continue
+        else:
+            # This is a numerical feature
+            if feature_name not in processed_base_columns:
+                processed_base_columns.add(feature_name)
+            else:
+                # Skip duplicate numerical features
+                continue
         
         schema.append({
             'name': feature_name,  # Keep original name for model compatibility
@@ -275,7 +294,7 @@ def infer_feature_schema_from_importance(feature_importance: dict) -> list:
             'dtype': dtype,
             'null_count': 0,
             'null_percentage': 0.0,
-            'unique_count': 0,
+            'unique_count': len(sample_values) if sample_values else 0,
             'is_constant': False,
             'is_high_cardinality': False,
             'sample_values': sample_values
