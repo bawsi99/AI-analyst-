@@ -2,10 +2,35 @@ from typing import Dict, List, Any, Optional
 from app.core.supabase import get_supabase_client
 from datetime import datetime
 import uuid
+import asyncio
+import time
 
 class DatabaseService:
     def __init__(self):
         self.supabase = get_supabase_client()
+    
+    async def _retry_operation(self, operation, max_retries=3, delay=1.0):
+        """Retry database operations with exponential backoff"""
+        for attempt in range(max_retries):
+            try:
+                return await operation()
+            except Exception as e:
+                if attempt == max_retries - 1:
+                    raise e
+                
+                # Log retry attempt
+                print(f"Database operation failed (attempt {attempt + 1}/{max_retries}): {e}")
+                
+                # Exponential backoff
+                wait_time = delay * (2 ** attempt)
+                await asyncio.sleep(wait_time)
+    
+    async def _execute_with_retry(self, operation, max_retries=3):
+        """Execute database operation with retry logic"""
+        def db_operation():
+            return operation()
+        
+        return await self._retry_operation(db_operation, max_retries)
     
     # User Profile Operations
     async def get_user_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
@@ -202,8 +227,12 @@ class DatabaseService:
                 }
             }
             
-            response = self.supabase.table('trained_models').insert(model_record).execute()
-            return response.data[0]['id']
+            # Use retry logic for critical database operation
+            def insert_model():
+                response = self.supabase.table('trained_models').insert(model_record).execute()
+                return response.data[0]['id']
+            
+            return await self._execute_with_retry(insert_model, max_retries=3)
         except Exception as e:
             print(f"Error creating trained model: {e}")
             raise
@@ -287,19 +316,24 @@ class DatabaseService:
             # If model_id is provided, get the UUID id from trained_models table
             model_uuid = None
             if model_id:
-                # Try to get the model by text model_id first
-                model_info = await self.get_model_by_id(model_id, user_id)
-                if model_info:
-                    model_uuid = model_info['id']  # Use the UUID id from trained_models
-                else:
-                    # If not found, try a direct query to get the UUID id
-                    try:
-                        response = self.supabase.table('trained_models').select('id').eq('model_id', model_id).eq('user_id', user_id).execute()
-                        if response.data:
-                            model_uuid = response.data[0]['id']
-                    except Exception as lookup_error:
-                        print(f"Warning: Could not find model {model_id} for summary: {lookup_error}")
-                        # Continue without model_id if lookup fails
+                # Try to get the model by text model_id first with retry logic
+                try:
+                    model_info = await self.get_model_by_id(model_id, user_id)
+                    if model_info:
+                        model_uuid = model_info['id']  # Use the UUID id from trained_models
+                    else:
+                        # If not found, try a direct query to get the UUID id with retry
+                        def lookup_model():
+                            response = self.supabase.table('trained_models').select('id').eq('model_id', model_id).eq('user_id', user_id).execute()
+                            if response.data:
+                                return response.data[0]['id']
+                            return None
+                        
+                        model_uuid = await self._execute_with_retry(lookup_model, max_retries=2)
+                        
+                except Exception as lookup_error:
+                    print(f"Warning: Could not find model {model_id} for summary: {lookup_error}")
+                    # Continue without model_id if lookup fails
             
             summary_record = {
                 'user_id': user_id,
@@ -315,9 +349,18 @@ class DatabaseService:
             # Only add model_id if we successfully found the model UUID
             if model_uuid:
                 summary_record['model_id'] = model_uuid
+            else:
+                # If model lookup failed, add a small delay to ensure model is committed
+                if model_id:
+                    print(f"Model lookup failed for {model_id}, adding delay before summary creation")
+                    await asyncio.sleep(0.5)  # 500ms delay
             
-            response = self.supabase.table('analysis_summaries').insert(summary_record).execute()
-            return response.data[0]['id']
+            # Use retry logic for summary creation
+            def insert_summary():
+                response = self.supabase.table('analysis_summaries').insert(summary_record).execute()
+                return response.data[0]['id']
+            
+            return await self._execute_with_retry(insert_summary, max_retries=3)
         except Exception as e:
             print(f"Error saving analysis summary: {e}")
             raise
