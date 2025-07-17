@@ -277,6 +277,19 @@ def infer_feature_schema_from_importance(feature_importance: dict) -> list:
                 # All categories for this base column
                 sample_values = sorted(list(base_to_categories.get(base_column, [])))
                 processed_base_columns.add(base_column)
+                
+                # For grouped categorical features, use the base column name as the name
+                schema.append({
+                    'name': base_column,  # Use base column name for grouped features
+                    'display_name': display_name,  # Add display name for frontend
+                    'dtype': dtype,
+                    'null_count': 0,
+                    'null_percentage': 0.0,
+                    'unique_count': len(sample_values) if sample_values else 0,
+                    'is_constant': False,
+                    'is_high_cardinality': False,
+                    'sample_values': sample_values
+                })
             else:
                 # Skip this feature as we've already processed the base column
                 continue
@@ -284,21 +297,22 @@ def infer_feature_schema_from_importance(feature_importance: dict) -> list:
             # This is a numerical feature
             if feature_name not in processed_base_columns:
                 processed_base_columns.add(feature_name)
+                
+                schema.append({
+                    'name': feature_name,  # Keep original name for numerical features
+                    'display_name': display_name,  # Add display name for frontend
+                    'dtype': dtype,
+                    'null_count': 0,
+                    'null_percentage': 0.0,
+                    'unique_count': len(sample_values) if sample_values else 0,
+                    'is_constant': False,
+                    'is_high_cardinality': False,
+                    'sample_values': sample_values
+                })
             else:
                 # Skip duplicate numerical features
                 continue
-        
-        schema.append({
-            'name': feature_name,  # Keep original name for model compatibility
-            'display_name': display_name,  # Add display name for frontend
-            'dtype': dtype,
-            'null_count': 0,
-            'null_percentage': 0.0,
-            'unique_count': len(sample_values) if sample_values else 0,
-            'is_constant': False,
-            'is_high_cardinality': False,
-            'sample_values': sample_values
-        })
+    
     return schema
 
 @router.get("/models/{model_id}/features")

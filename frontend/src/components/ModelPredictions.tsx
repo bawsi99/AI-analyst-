@@ -56,14 +56,22 @@ const ModelPredictions: React.FC = () => {
       setModelFeatures(response.features);
       
       // Initialize input data with empty values for each feature
-      const initialData = response.features.reduce((acc, feature) => {
-        // For categorical features, initialize with '0' (one-hot encoding)
+      // For grouped features, we need to initialize all one-hot encoded columns
+      const initialData = {};
+      
+      response.features.forEach(feature => {
         if (feature.dtype === 'categorical') {
-          return { ...acc, [feature.name]: '0' };
+          // For categorical features, initialize all one-hot encoded columns to '0'
+          feature.sample_values.forEach(category => {
+            const oneHotColumn = `${feature.name}_${category}`;
+            initialData[oneHotColumn] = '0';
+          });
         } else {
-          return { ...acc, [feature.name]: '' };
+          // For numerical features, initialize with empty string
+          initialData[feature.name] = '';
         }
-      }, {});
+      });
+      
       setInputData([initialData]);
     } catch (error: any) {
       toast.error('Failed to load model features');
@@ -85,14 +93,21 @@ const ModelPredictions: React.FC = () => {
 
   const handleAddRow = () => {
     if (modelFeatures.length > 0) {
-      const newRow = modelFeatures.reduce((acc, feature) => {
-        // For categorical features, initialize with '0' (one-hot encoding)
+      const newRow = {};
+      
+      modelFeatures.forEach(feature => {
         if (feature.dtype === 'categorical') {
-          return { ...acc, [feature.name]: '0' };
+          // For categorical features, initialize all one-hot encoded columns to '0'
+          feature.sample_values.forEach(category => {
+            const oneHotColumn = `${feature.name}_${category}`;
+            newRow[oneHotColumn] = '0';
+          });
         } else {
-          return { ...acc, [feature.name]: '' };
+          // For numerical features, initialize with empty string
+          newRow[feature.name] = '';
         }
-      }, {});
+      });
+      
       setInputData([...inputData, newRow]);
     } else {
       setInputData([...inputData, {}]);
@@ -112,20 +127,21 @@ const ModelPredictions: React.FC = () => {
     // Check if this is a categorical feature with one-hot encoding
     const feature = modelFeatures.find(f => f.name === field);
     if (feature && feature.dtype === 'categorical' && feature.sample_values.length > 0) {
-      // This is a one-hot encoded categorical feature
+      // This is a grouped categorical feature
+      // For grouped features, we need to set the appropriate one-hot encoded columns
+      const baseColumn = feature.name; // Use the base column name
+      
       // Clear all related one-hot encoded columns first
-      const baseColumn = feature.display_name || field;
       modelFeatures.forEach(f => {
-        if (f.display_name === baseColumn && f.name !== field) {
+        if (f.name.startsWith(baseColumn + '_')) {
           currentRow[f.name] = '0';
         }
       });
       
-      // Set the selected value to 1 and others to 0
+      // Set the selected category to 1
       if (value) {
-        currentRow[field] = '1';
-      } else {
-        currentRow[field] = '0';
+        const oneHotColumn = `${baseColumn}_${value.replace(/ /g, '_')}`;
+        currentRow[oneHotColumn] = '1';
       }
     } else {
       // Regular numerical or text field
@@ -175,14 +191,14 @@ const ModelPredictions: React.FC = () => {
     const value = inputData[rowIndex]?.[feature.name] || '';
     
     if (feature.dtype === 'categorical' && feature.sample_values.length > 0) {
-      // For categorical features, we need to determine the current selected value
+      // For grouped categorical features, we need to determine the current selected value
       // by checking which one-hot encoded column is set to '1'
-      const baseColumn = feature.display_name || feature.name;
+      const baseColumn = feature.name; // Use the base column name
       let selectedValue = '';
       
       // Find the currently selected category for this base column
       modelFeatures.forEach(f => {
-        if (f.display_name === baseColumn && inputData[rowIndex]?.[f.name] === '1') {
+        if (f.name.startsWith(baseColumn + '_') && inputData[rowIndex]?.[f.name] === '1') {
           // Extract the category value from the feature name
           // Remove the base column name and any remaining underscores
           const categoryValue = f.name.replace(`${baseColumn}_`, '').replace(/_/g, ' ');
@@ -196,20 +212,15 @@ const ModelPredictions: React.FC = () => {
           onChange={(e) => {
             const newValue = e.target.value;
             if (newValue) {
-              // Find the corresponding one-hot encoded feature and set it to 1
-              // Convert the display value back to the feature name format
-              const featureValue = newValue.replace(/ /g, '_');
-              const targetFeature = modelFeatures.find(f => 
-                f.display_name === baseColumn && f.name === `${baseColumn}_${featureValue}`
-              );
-              if (targetFeature) {
-                handleInputChange(rowIndex, targetFeature.name, '1');
-              }
+              // Set the selected category for the grouped feature
+              handleInputChange(rowIndex, baseColumn, newValue);
             } else {
               // Clear all related one-hot encoded features
               modelFeatures.forEach(f => {
-                if (f.display_name === baseColumn) {
-                  handleInputChange(rowIndex, f.name, '0');
+                if (f.name.startsWith(baseColumn + '_')) {
+                  const newData = [...inputData];
+                  newData[rowIndex] = { ...newData[rowIndex], [f.name]: '0' };
+                  setInputData(newData);
                 }
               });
             }
