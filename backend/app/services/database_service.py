@@ -289,6 +289,7 @@ class DatabaseService:
                 'session_id': session_uuid,  # Use the UUID id from analysis_sessions
                 'model_id': model_id,
                 'summary_type': 'complete',  # Add the required summary_type field
+                'content': summary_data['data_summary'],  # Add the required content field
                 'data_summary': summary_data['data_summary'],
                 'model_summary': summary_data.get('model_summary'),
                 'key_insights': summary_data['key_insights'],
