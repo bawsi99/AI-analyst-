@@ -243,6 +243,40 @@ async def debug_user_info(
             }
         }
 
+def infer_feature_schema_from_importance(feature_importance: dict) -> list:
+    """
+    Given a feature_importance dict, return a schema list with correct dtype and all possible categories for categorical features.
+    """
+    # First, collect all base columns and their categories
+    base_to_categories = {}
+    for feature_name in feature_importance.keys():
+        if '_' in feature_name and not feature_name.replace('_', '').replace('.', '').isdigit():
+            base_column = feature_name.split('_')[0]
+            category_value = '_'.join(feature_name.split('_')[1:])
+            base_to_categories.setdefault(base_column, set()).add(category_value)
+    
+    schema = []
+    for feature_name in feature_importance.keys():
+        dtype = 'numerical'  # Default assumption
+        sample_values = []
+        # Check if this is a one-hot encoded categorical feature
+        if '_' in feature_name and not feature_name.replace('_', '').replace('.', '').isdigit():
+            base_column = feature_name.split('_')[0]
+            dtype = 'categorical'
+            # All categories for this base column
+            sample_values = sorted(list(base_to_categories.get(base_column, [])))
+        schema.append({
+            'name': feature_name,
+            'dtype': dtype,
+            'null_count': 0,
+            'null_percentage': 0.0,
+            'unique_count': 0,
+            'is_constant': False,
+            'is_high_cardinality': False,
+            'sample_values': sample_values
+        })
+    return schema
+
 @router.get("/models/{model_id}/features")
 async def get_model_features(
     model_id: str,
@@ -319,59 +353,19 @@ async def get_model_features(
         
         # Get schema from session metadata
         metadata = session_info.get('metadata', {})
+        feature_importance = model.get('feature_importance', {})
         if 'data_insights' not in metadata:
             # Try to get from data_insights table
             data_insights = await database_service.get_data_insights(session_id, current_user["id"])
             if not data_insights:
                 print(f"DEBUG: No data insights found - creating basic schema from feature importance")
-                # Create basic schema from feature importance
-                schema = []
-                feature_importance = model.get('feature_importance', {})
-                for feature_name in feature_importance.keys():
-                    schema.append({
-                        'name': feature_name,
-                        'dtype': 'numerical',  # Default assumption
-                        'null_count': 0,
-                        'null_percentage': 0.0,
-                        'unique_count': 0,
-                        'is_constant': False,
-                        'is_high_cardinality': False,
-                        'sample_values': []
-                    })
+                schema = infer_feature_schema_from_importance(feature_importance)
             else:
                 print(f"DEBUG: Data insights found from table")
-                # Create schema from available data
-                schema = []
-                feature_importance = model.get('feature_importance', {})
-                for feature_name in feature_importance.keys():
-                    schema.append({
-                        'name': feature_name,
-                        'dtype': 'numerical',  # Default assumption
-                        'null_count': 0,
-                        'null_percentage': 0.0,
-                        'unique_count': 0,
-                        'is_constant': False,
-                        'is_high_cardinality': False,
-                        'sample_values': []
-                    })
+                schema = infer_feature_schema_from_importance(feature_importance)
         else:
             print(f"DEBUG: Data insights found in metadata")
-            # Get schema from metadata
-            data_insights = metadata['data_insights']
-            # Create schema from available data
-            schema = []
-            feature_importance = model.get('feature_importance', {})
-            for feature_name in feature_importance.keys():
-                schema.append({
-                    'name': feature_name,
-                    'dtype': 'numerical',  # Default assumption
-                    'null_count': 0,
-                    'null_percentage': 0.0,
-                    'unique_count': 0,
-                    'is_constant': False,
-                    'is_high_cardinality': False,
-                    'sample_values': []
-                })
+            schema = infer_feature_schema_from_importance(feature_importance)
         
         # Get target column and excluded columns
         target_column = model.get('target_column', '')
