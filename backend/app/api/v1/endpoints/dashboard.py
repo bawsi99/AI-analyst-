@@ -245,115 +245,28 @@ async def debug_user_info(
 
 def infer_feature_schema_from_importance(feature_importance: dict) -> list:
     """
-    Given a feature_importance dict, return a schema list with correct dtype and all possible categories for categorical features.
+    Given a feature_importance dict, return a schema list where each feature (including one-hot encoded) is its own entry.
     """
-    # First, collect all base columns and their categories
-    base_to_categories = {}
-    processed_base_columns = set()
-    
-    # Common numerical feature patterns that might contain underscores
-    numerical_patterns = [
-        'total_charges', 'monthly_charges', 'total_amount', 'total_value',
-        'avg_', 'mean_', 'std_', 'min_', 'max_', 'sum_', 'count_',
-        'price_', 'cost_', 'amount_', 'value_', 'score_', 'rate_',
-        'percentage_', 'ratio_', 'index_', 'level_', 'grade_', 'rank_'
-    ]
-    
-    for feature_name in feature_importance.keys():
-        # Check if this looks like a one-hot encoded feature
-        if '_' in feature_name and not feature_name.replace('_', '').replace('.', '').isdigit():
-            # Check if it's a known numerical pattern
-            is_numerical_pattern = any(feature_name.startswith(pattern) for pattern in numerical_patterns)
-            
-            if not is_numerical_pattern:
-                # This might be a one-hot encoded feature
-                base_column = feature_name.split('_')[0]
-                category_value = '_'.join(feature_name.split('_')[1:])
-                base_to_categories.setdefault(base_column, set()).add(category_value)
-            else:
-                # This is a numerical feature with underscore, add it directly
-                base_to_categories[feature_name] = set()
-        else:
-            # This is a numerical feature, add it directly
-            base_to_categories[feature_name] = set()
-    
     schema = []
     for feature_name in feature_importance.keys():
-        dtype = 'numerical'  # Default assumption
-        sample_values = []
-        display_name = feature_name  # Default to original name
-        
-        # Check if this is a one-hot encoded categorical feature
+        # Heuristic: if feature name contains _ and the suffix is a known category (e.g., Yes/No), treat as categorical
         if '_' in feature_name and not feature_name.replace('_', '').replace('.', '').isdigit():
-            # Check if it's a known numerical pattern
-            is_numerical_pattern = any(feature_name.startswith(pattern) for pattern in numerical_patterns)
-            
-            if not is_numerical_pattern:
-                # This is likely a one-hot encoded feature
-                base_column = feature_name.split('_')[0]
-                
-                # Only process this feature if we haven't already processed this base column
-                if base_column not in processed_base_columns:
-                    dtype = 'categorical'
-                    display_name = base_column  # Use base column name for display
-                    # All categories for this base column
-                    sample_values = sorted(list(base_to_categories.get(base_column, [])))
-                    processed_base_columns.add(base_column)
-                    
-                    # For grouped categorical features, use the base column name as the name
-                    schema.append({
-                        'name': base_column,  # Use base column name for grouped features
-                        'display_name': display_name,  # Add display name for frontend
-                        'dtype': dtype,
-                        'null_count': 0,
-                        'null_percentage': 0.0,
-                        'unique_count': len(sample_values) if sample_values else 0,
-                        'is_constant': False,
-                        'is_high_cardinality': False,
-                        'sample_values': sample_values
-                    })
-                else:
-                    # Skip this feature as we've already processed the base column
-                    continue
-            else:
-                # This is a numerical feature with underscore pattern
-                if feature_name not in processed_base_columns:
-                    processed_base_columns.add(feature_name)
-                    
-                    schema.append({
-                        'name': feature_name,  # Keep original name for numerical features
-                        'display_name': display_name,  # Add display name for frontend
-                        'dtype': dtype,
-                        'null_count': 0,
-                        'null_percentage': 0.0,
-                        'unique_count': len(sample_values) if sample_values else 0,
-                        'is_constant': False,
-                        'is_high_cardinality': False,
-                        'sample_values': sample_values
-                    })
-                else:
-                    # Skip duplicate numerical features
-                    continue
+            dtype = 'categorical'
+            sample_values = [feature_name.split('_', 1)[1]]  # e.g., 'movies_Yes' -> ['Yes']
         else:
-            # This is a numerical feature
-            if feature_name not in processed_base_columns:
-                processed_base_columns.add(feature_name)
-                
-                schema.append({
-                    'name': feature_name,  # Keep original name for numerical features
-                    'display_name': display_name,  # Add display name for frontend
-                    'dtype': dtype,
-                    'null_count': 0,
-                    'null_percentage': 0.0,
-                    'unique_count': len(sample_values) if sample_values else 0,
-                    'is_constant': False,
-                    'is_high_cardinality': False,
-                    'sample_values': sample_values
-                })
-            else:
-                # Skip duplicate numerical features
-                continue
-    
+            dtype = 'numerical'
+            sample_values = []
+        schema.append({
+            'name': feature_name,
+            'display_name': feature_name,
+            'dtype': dtype,
+            'null_count': 0,
+            'null_percentage': 0.0,
+            'unique_count': len(sample_values) if sample_values else 0,
+            'is_constant': False,
+            'is_high_cardinality': False,
+            'sample_values': sample_values
+        })
     return schema
 
 @router.get("/models/{model_id}/features")
