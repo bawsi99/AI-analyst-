@@ -67,9 +67,9 @@ async def export_report(
                 "created_at": session.get("created_at")
             },
             "data_profile": {
-                "schema": profile_data["schema"],
-                "statistics": profile_data["statistics"],
-                "insights": profile_data["insights"]
+                "schema": [schema.dict() for schema in profile_data["schema"]],  # Convert to dict for JSON serialization
+                "statistics": profile_data["statistics"].dict(),  # Convert to dict for JSON serialization
+                "insights": profile_data["insights"].dict()  # Convert to dict for JSON serialization
             },
             "summary": summary_data,
             "ai_analysis": ai_analysis_data,
@@ -187,7 +187,12 @@ async def share_results(
                     "status": session.get("status"),
                     "created_at": session.get("created_at")
                 },
-                "data_profile": profile_data,
+                "data_profile": {
+                    "schema": [schema.dict() for schema in profile_data["schema"]],  # Convert to dict for JSON serialization
+                    "statistics": profile_data["statistics"].dict(),  # Convert to dict for JSON serialization
+                    "insights": profile_data["insights"].dict(),  # Convert to dict for JSON serialization
+                    "metadata": profile_data["metadata"]
+                },
                 "summary": summary_data,
                 "ai_analysis": ai_analysis_data,
                 "model_info": model_info

@@ -45,11 +45,13 @@ async def get_profile(
         await database_service.save_data_insights(session_id, current_user["id"], insights_data)
         
         # Save schema to session metadata
+        # Convert ColumnSchema objects to dictionaries for JSON serialization
+        schema_dicts = [schema.dict() for schema in profile_data['schema']]
         await database_service.update_session_status(
             session_id=session_id,
             user_id=current_user["id"],
             status='profiled',
-            metadata={'schema': profile_data['schema']}
+            metadata={'schema': schema_dicts}
         )
         
         return {

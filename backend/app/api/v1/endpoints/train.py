@@ -151,11 +151,13 @@ async def train_model(session_id: str, request: dict, current_user: Dict[str, An
             await database_service.save_data_insights(session_id, current_user["id"], insights_data)
             
             # Save schema to session metadata if not already saved
+            # Convert ColumnSchema objects to dictionaries for JSON serialization
+            schema_dicts = [schema.dict() for schema in profile_data['schema']]
             await database_service.update_session_status(
                 session_id=session_id,
                 user_id=current_user["id"],
                 status='trained',
-                metadata={'schema': profile_data['schema'], 'model_id': training_result['model_id']}
+                metadata={'schema': schema_dicts, 'model_id': training_result['model_id']}
             )
             
             print(f"Summary and data insights saved for model {training_result['model_id']}")

@@ -243,8 +243,8 @@ def profile_data_task(self, session_id: str, user_id: str) -> Dict[str, Any]:
         return {
             'status': 'SUCCESS',
             'metadata': profile_data['metadata'],
-            'schema': profile_data['schema'],
-            'statistics': profile_data['statistics'],
+            'schema': [schema.dict() for schema in profile_data['schema']],  # Convert to dict for JSON serialization
+            'statistics': profile_data['statistics'].dict(),  # Convert to dict for JSON serialization
             'insights': insights_data
         }
         
