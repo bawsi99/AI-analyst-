@@ -25,6 +25,37 @@ class LoginRequest(BaseModel):
 class RefreshRequest(BaseModel):
     refresh_token: str
 
+# OPTIONS handlers for preflight requests
+@router.options("/login")
+async def login_options():
+    """Handle preflight requests for login endpoint"""
+    return {"message": "Preflight request handled for login"}
+
+@router.options("/register")
+async def register_options():
+    """Handle preflight requests for register endpoint"""
+    return {"message": "Preflight request handled for register"}
+
+@router.options("/logout")
+async def logout_options():
+    """Handle preflight requests for logout endpoint"""
+    return {"message": "Preflight request handled for logout"}
+
+@router.options("/profile")
+async def profile_options():
+    """Handle preflight requests for profile endpoint"""
+    return {"message": "Preflight request handled for profile"}
+
+@router.options("/refresh")
+async def refresh_options():
+    """Handle preflight requests for refresh endpoint"""
+    return {"message": "Preflight request handled for refresh"}
+
+@router.options("/resend-confirmation")
+async def resend_confirmation_options():
+    """Handle preflight requests for resend confirmation endpoint"""
+    return {"message": "Preflight request handled for resend confirmation"}
+
 @router.post("/register")
 async def register_user(request: RegisterRequest):
     """

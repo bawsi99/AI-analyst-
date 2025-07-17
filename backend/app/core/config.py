@@ -8,19 +8,31 @@ class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "Mini AI Analyst"
     
-    # CORS
+    # CORS - Comprehensive configuration for all possible domains
     CORS_ORIGINS: List[str] = [
+        # Local development
         "http://localhost:3000",
         "http://localhost:8080",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:8080",
         "http://localhost:3001",
         "http://127.0.0.1:3001",
-        "https://orthoaiassgnment-phi.vercel.app",  # Vercel frontend
-        "https://orthoaiassgnment.vercel.app",      # Alternative Vercel domain
-        "https://orthoaiassgnment-git-main-aaryan-manawats-projects.vercel.app",  # Vercel preview domain
-        "https://orthoaiassgnment-8qwz7a87u-aaryan-manawats-projects.vercel.app",  # Vercel preview domain
-        "*"  # Allow all origins for development
+        
+        # Vercel domains - all possible variations
+        "https://orthoaiassgnment-phi.vercel.app",
+        "https://orthoaiassgnment-3osm.vercel.app",
+        "https://orthoaiassgnment.vercel.app",
+        "https://orthoaiassgnment-git-main-aaryan-manawats-projects.vercel.app",
+        "https://orthoaiassgnment-8qwz7a87u-aaryan-manawats-projects.vercel.app",
+        "https://orthoaiassgnment-3osm-git-main-aaryan-manawats-projects.vercel.app",
+        "https://orthoaiassgnment-3osm-8fm6gxa3v-aaryan-manawats-projects.vercel.app",
+        
+        # Additional Vercel patterns
+        "https://*.vercel.app",
+        "https://orthoaiassgnment-*.vercel.app",
+        
+        # Development wildcard (remove in production)
+        "*"
     ]
     
     # File Upload

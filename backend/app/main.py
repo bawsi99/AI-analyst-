@@ -3,9 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 import os
+import logging
 
 from app.core.config import settings
 from app.api.v1.api import api_router
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Ensure required directories exist at startup
 def ensure_directories():
@@ -39,7 +44,7 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# CORS middleware
+# Enhanced CORS middleware with better error handling
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -57,12 +62,14 @@ app.add_middleware(
         "Access-Control-Request-Headers",
         "Content-Length",
         "Cache-Control",
+        "X-API-Key",
+        "X-CSRF-Token",
     ],
     expose_headers=["*"],
     max_age=86400,  # Cache preflight requests for 24 hours
 )
 
-# Request logging middleware
+# Request logging middleware with CORS debugging
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     """Log all incoming requests for debugging"""
@@ -70,14 +77,27 @@ async def log_requests(request: Request, call_next):
     start_time = time.time()
     
     # Log request details
-    print(f"Request: {request.method} {request.url}")
-    print(f"Headers: {dict(request.headers)}")
+    origin = request.headers.get("origin", "No origin")
+    method = request.method
+    url = str(request.url)
+    
+    logger.info(f"Request: {method} {url}")
+    logger.info(f"Origin: {origin}")
+    logger.info(f"Headers: {dict(request.headers)}")
+    
+    # Check if origin is in allowed origins
+    if origin != "No origin":
+        is_allowed = origin in settings.CORS_ORIGINS or "*" in settings.CORS_ORIGINS
+        logger.info(f"CORS check: Origin '{origin}' allowed: {is_allowed}")
+        if not is_allowed:
+            logger.warning(f"CORS blocked origin: {origin}")
+            logger.info(f"Allowed origins: {settings.CORS_ORIGINS}")
     
     response = await call_next(request)
     
     # Log response details
     process_time = time.time() - start_time
-    print(f"Response: {response.status_code} - {process_time:.3f}s")
+    logger.info(f"Response: {response.status_code} - {process_time:.3f}s")
     
     return response
 
@@ -136,10 +156,42 @@ async def debug_cors():
         "timestamp": "2024-01-01T00:00:00Z"
     }
 
+# Explicit OPTIONS handlers for auth endpoints to handle preflight requests
+@app.options("/api/v1/auth/login")
+async def auth_login_options():
+    """Handle preflight requests for login endpoint"""
+    return {"message": "Preflight request handled for login"}
+
+@app.options("/api/v1/auth/register")
+async def auth_register_options():
+    """Handle preflight requests for register endpoint"""
+    return {"message": "Preflight request handled for register"}
+
+@app.options("/api/v1/auth/logout")
+async def auth_logout_options():
+    """Handle preflight requests for logout endpoint"""
+    return {"message": "Preflight request handled for logout"}
+
+@app.options("/api/v1/auth/profile")
+async def auth_profile_options():
+    """Handle preflight requests for profile endpoint"""
+    return {"message": "Preflight request handled for profile"}
+
+@app.options("/api/v1/auth/refresh")
+async def auth_refresh_options():
+    """Handle preflight requests for refresh endpoint"""
+    return {"message": "Preflight request handled for refresh"}
+
+@app.options("/api/v1/auth/resend-confirmation")
+async def auth_resend_confirmation_options():
+    """Handle preflight requests for resend confirmation endpoint"""
+    return {"message": "Preflight request handled for resend confirmation"}
+
 # Global exception handler for better error responses
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     """Global exception handler to ensure consistent error responses"""
+    logger.error(f"Global exception: {str(exc)}")
     return JSONResponse(
         status_code=500,
         content={
