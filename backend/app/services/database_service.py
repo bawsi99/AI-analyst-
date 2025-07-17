@@ -27,7 +27,7 @@ class DatabaseService:
     
     async def _execute_with_retry(self, operation, max_retries=3):
         """Execute database operation with retry logic"""
-        def db_operation():
+        async def db_operation():
             return operation()
         
         return await self._retry_operation(db_operation, max_retries)

@@ -209,12 +209,28 @@ class MLPipeline:
                     feature_names.extend(cols)
                 elif name == 'cat':
                     # For categorical features, get encoded feature names
-                    if hasattr(trans.named_steps['onehot'], 'get_feature_names_out'):
-                        cat_features = trans.named_steps['onehot'].get_feature_names_out(cols)
-                        feature_names.extend(cat_features)
-                    else:
-                        # Fallback for older sklearn versions
-                        feature_names.extend([f"{col}_{i}" for col in cols for i in range(len(cols))])
+                    try:
+                        # Check if the transformer has been fitted
+                        if hasattr(trans, 'named_steps') and 'onehot' in trans.named_steps:
+                            onehot = trans.named_steps['onehot']
+                            if hasattr(onehot, 'get_feature_names_out') and hasattr(onehot, 'categories_'):
+                                # Only call get_feature_names_out if the encoder has been fitted
+                                if onehot.categories_ is not None:
+                                    cat_features = onehot.get_feature_names_out(cols)
+                                    feature_names.extend(cat_features)
+                                else:
+                                    # Fallback: create feature names manually
+                                    feature_names.extend([f"{col}_encoded" for col in cols])
+                            else:
+                                # Fallback for older sklearn versions
+                                feature_names.extend([f"{col}_encoded" for col in cols])
+                        else:
+                            # Fallback if transformer structure is different
+                            feature_names.extend([f"{col}_encoded" for col in cols])
+                    except Exception as cat_error:
+                        print(f"Warning: Error processing categorical features: {cat_error}")
+                        # Fallback: create simple feature names
+                        feature_names.extend([f"{col}_encoded" for col in cols])
             
             # Get feature importance
             if hasattr(model, 'feature_importances_'):
@@ -224,6 +240,7 @@ class MLPipeline:
                 if len(importances.shape) > 1:
                     importances = np.mean(importances, axis=0)
             else:
+                print("Warning: Model does not have feature_importances_ or coef_ attributes")
                 return {}
             
             # Create feature importance dictionary
@@ -243,6 +260,7 @@ class MLPipeline:
             
         except Exception as e:
             print(f"Error calculating feature importance: {e}")
+            # Return empty dict instead of raising error
             return {}
     
     def predict(self, model_id: str, data: List[Dict[str, Any]]) -> Dict[str, Any]:
