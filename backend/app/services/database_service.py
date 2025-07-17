@@ -301,20 +301,36 @@ class DatabaseService:
         try:
             print(f"DEBUG: get_model_by_id called - model_id={model_id}, user_id={user_id}")
             
+            # First try with exact user_id match
             response = self.supabase.table('trained_models').select('*, analysis_sessions(file_name, session_id)').eq('model_id', model_id).eq('user_id', user_id).execute()
             
-            print(f"DEBUG: Database response - data count: {len(response.data) if response.data else 0}")
+            print(f"DEBUG: Database response with user_id - data count: {len(response.data) if response.data else 0}")
             
             if response.data:
                 model_data = response.data[0]
-                print(f"DEBUG: Model data found: {model_data}")
+                print(f"DEBUG: Model data found with user_id: {model_data}")
                 # Add the text session_id from the joined analysis_sessions table
                 if 'analysis_sessions' in model_data and model_data['analysis_sessions']:
                     model_data['text_session_id'] = model_data['analysis_sessions']['session_id']
                     print(f"DEBUG: Added text_session_id: {model_data['text_session_id']}")
                 return model_data
             
-            print(f"DEBUG: No model found in database")
+            # If not found, try without user_id constraint to see if model exists
+            print(f"DEBUG: Model not found with user_id, trying without user constraint")
+            response_no_user = self.supabase.table('trained_models').select('*, analysis_sessions(file_name, session_id)').eq('model_id', model_id).execute()
+            
+            if response_no_user.data:
+                print(f"DEBUG: Model exists but with different user_id - found {len(response_no_user.data)} models")
+                for i, model in enumerate(response_no_user.data):
+                    print(f"DEBUG: Model {i} user_id: {model.get('user_id')}")
+                    print(f"DEBUG: Model {i} created_at: {model.get('created_at')}")
+                
+                # For now, return None since we want to maintain user isolation
+                # In the future, we could implement a more sophisticated user matching logic
+                print(f"DEBUG: Returning None to maintain user isolation")
+                return None
+            
+            print(f"DEBUG: No model found in database at all")
             return None
         except Exception as e:
             print(f"Error getting model: {e}")

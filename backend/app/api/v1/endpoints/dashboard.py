@@ -194,6 +194,55 @@ async def get_model_details(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get model details: {str(e)}")
 
+@router.get("/debug/user-info")
+async def debug_user_info(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+):
+    """
+    Debug endpoint to check user authentication and database access.
+    """
+    try:
+        user_id = current_user["id"]
+        email = current_user.get("email", "unknown")
+        
+        # Try to get user profile from database
+        profile = await database_service.get_user_profile(user_id)
+        
+        # Try to get user's sessions
+        sessions = await database_service.get_user_sessions(user_id)
+        
+        # Try to get user's models
+        models = await database_service.get_user_models(user_id)
+        
+        return {
+            "message": "User debug info retrieved successfully",
+            "success": True,
+            "auth_info": {
+                "user_id": user_id,
+                "email": email,
+                "auth_data": current_user
+            },
+            "database_info": {
+                "profile_exists": profile is not None,
+                "profile": profile,
+                "sessions_count": len(sessions),
+                "models_count": len(models),
+                "sessions": sessions[:3],  # First 3 sessions
+                "models": models[:3]  # First 3 models
+            }
+        }
+    except Exception as e:
+        return {
+            "message": "Error getting user debug info",
+            "success": False,
+            "error": str(e),
+            "auth_info": {
+                "user_id": current_user.get("id", "unknown"),
+                "email": current_user.get("email", "unknown"),
+                "auth_data": current_user
+            }
+        }
+
 @router.get("/models/{model_id}/features")
 async def get_model_features(
     model_id: str,
@@ -211,9 +260,25 @@ async def get_model_features(
     try:
         print(f"DEBUG: Features endpoint called - model_id={model_id}, user_id={current_user['id']}")
         
+        # First try to get model with user_id
         model = await database_service.get_model_by_id(model_id, current_user["id"])
+        
+        # If not found, try without user_id constraint (for debugging)
         if not model:
-            print(f"DEBUG: Model not found - model_id={model_id}, user_id={current_user['id']}")
+            print(f"DEBUG: Model not found with user_id - trying without user constraint")
+            try:
+                # Try to get model without user constraint to see if it exists
+                supabase = database_service._ensure_supabase_client()
+                response = supabase.table('trained_models').select('*, analysis_sessions(file_name, session_id)').eq('model_id', model_id).execute()
+                if response.data:
+                    print(f"DEBUG: Model exists but not for this user - found {len(response.data)} models")
+                    print(f"DEBUG: Model user_id: {response.data[0].get('user_id')}")
+                    print(f"DEBUG: Current user_id: {current_user['id']}")
+                else:
+                    print(f"DEBUG: Model does not exist at all in database")
+            except Exception as e:
+                print(f"DEBUG: Error checking model without user constraint: {e}")
+            
             raise HTTPException(status_code=404, detail=f"Model not found: {model_id}")
         
         print(f"DEBUG: Model found - {model}")
@@ -235,6 +300,19 @@ async def get_model_features(
         session_info = await database_service.get_session_by_id(session_id, current_user["id"])
         if not session_info:
             print(f"DEBUG: Session not found - session_id={session_id}, user_id={current_user['id']}")
+            # Try to get session without user constraint for debugging
+            try:
+                supabase = database_service._ensure_supabase_client()
+                response = supabase.table('analysis_sessions').select('*').eq('session_id', session_id).execute()
+                if response.data:
+                    print(f"DEBUG: Session exists but not for this user - found {len(response.data)} sessions")
+                    print(f"DEBUG: Session user_id: {response.data[0].get('user_id')}")
+                    print(f"DEBUG: Current user_id: {current_user['id']}")
+                else:
+                    print(f"DEBUG: Session does not exist at all in database")
+            except Exception as e:
+                print(f"DEBUG: Error checking session without user constraint: {e}")
+            
             raise HTTPException(status_code=404, detail=f"Session not found: {session_id}")
         
         print(f"DEBUG: Session found - {session_info}")
