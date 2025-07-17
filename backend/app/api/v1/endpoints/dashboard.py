@@ -209,24 +209,35 @@ async def get_model_features(
     - features: Model feature information
     """
     try:
+        print(f"DEBUG: Features endpoint called - model_id={model_id}, user_id={current_user['id']}")
+        
         model = await database_service.get_model_by_id(model_id, current_user["id"])
         if not model:
-            raise HTTPException(status_code=404, detail="Model not found")
+            print(f"DEBUG: Model not found - model_id={model_id}, user_id={current_user['id']}")
+            raise HTTPException(status_code=404, detail=f"Model not found: {model_id}")
+        
+        print(f"DEBUG: Model found - {model}")
         
         # Get the session ID from the model
         session_id = None
         if 'analysis_sessions' in model and model['analysis_sessions']:
             session_id = model['analysis_sessions']['session_id']
+            print(f"DEBUG: Session ID from analysis_sessions: {session_id}")
         elif 'text_session_id' in model:
             session_id = model['text_session_id']
+            print(f"DEBUG: Session ID from text_session_id: {session_id}")
         
         if not session_id:
+            print(f"DEBUG: No session ID found in model")
             raise HTTPException(status_code=404, detail="Session not found for this model")
         
         # Get session info from database
         session_info = await database_service.get_session_by_id(session_id, current_user["id"])
         if not session_info:
-            raise HTTPException(status_code=404, detail="Session not found")
+            print(f"DEBUG: Session not found - session_id={session_id}, user_id={current_user['id']}")
+            raise HTTPException(status_code=404, detail=f"Session not found: {session_id}")
+        
+        print(f"DEBUG: Session found - {session_info}")
         
         # Get schema from session metadata
         metadata = session_info.get('metadata', {})
@@ -234,23 +245,39 @@ async def get_model_features(
             # Try to get from data_insights table
             data_insights = await database_service.get_data_insights(session_id, current_user["id"])
             if not data_insights:
-                raise HTTPException(status_code=404, detail="Data profile not found")
-            
-            # Create basic schema from feature importance
-            schema = []
-            feature_importance = model.get('feature_importance', {})
-            for feature_name in feature_importance.keys():
-                schema.append({
-                    'name': feature_name,
-                    'dtype': 'numerical',  # Default assumption
-                    'null_count': 0,
-                    'null_percentage': 0.0,
-                    'unique_count': 0,
-                    'is_constant': False,
-                    'is_high_cardinality': False,
-                    'sample_values': []
-                })
+                print(f"DEBUG: No data insights found - creating basic schema from feature importance")
+                # Create basic schema from feature importance
+                schema = []
+                feature_importance = model.get('feature_importance', {})
+                for feature_name in feature_importance.keys():
+                    schema.append({
+                        'name': feature_name,
+                        'dtype': 'numerical',  # Default assumption
+                        'null_count': 0,
+                        'null_percentage': 0.0,
+                        'unique_count': 0,
+                        'is_constant': False,
+                        'is_high_cardinality': False,
+                        'sample_values': []
+                    })
+            else:
+                print(f"DEBUG: Data insights found from table")
+                # Create schema from available data
+                schema = []
+                feature_importance = model.get('feature_importance', {})
+                for feature_name in feature_importance.keys():
+                    schema.append({
+                        'name': feature_name,
+                        'dtype': 'numerical',  # Default assumption
+                        'null_count': 0,
+                        'null_percentage': 0.0,
+                        'unique_count': 0,
+                        'is_constant': False,
+                        'is_high_cardinality': False,
+                        'sample_values': []
+                    })
         else:
+            print(f"DEBUG: Data insights found in metadata")
             # Get schema from metadata
             data_insights = metadata['data_insights']
             # Create schema from available data
@@ -272,6 +299,8 @@ async def get_model_features(
         target_column = model.get('target_column', '')
         excluded_columns = model.get('hyperparameters', {}).get('excluded_columns', [])
         
+        print(f"DEBUG: Target column: {target_column}, Excluded columns: {excluded_columns}")
+        
         # Filter schema to only include features used in the model
         # (exclude target column and excluded columns)
         model_features = []
@@ -289,6 +318,8 @@ async def get_model_features(
                     'sample_values': column.get('sample_values', [])[:5],  # Limit to 5 sample values
                     'null_percentage': column.get('null_percentage', 0.0)
                 })
+        
+        print(f"DEBUG: Model features count: {len(model_features)}")
         
         # Sort features by importance if available
         feature_importance = model.get('feature_importance', {})
@@ -309,4 +340,5 @@ async def get_model_features(
     except HTTPException:
         raise
     except Exception as e:
+        print(f"DEBUG: Unexpected error in features endpoint: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get model features: {str(e)}")

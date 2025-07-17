@@ -299,13 +299,22 @@ class DatabaseService:
     async def get_model_by_id(self, model_id: str, user_id: str) -> Optional[Dict[str, Any]]:
         """Get trained model by model ID"""
         try:
+            print(f"DEBUG: get_model_by_id called - model_id={model_id}, user_id={user_id}")
+            
             response = self.supabase.table('trained_models').select('*, analysis_sessions(file_name, session_id)').eq('model_id', model_id).eq('user_id', user_id).execute()
+            
+            print(f"DEBUG: Database response - data count: {len(response.data) if response.data else 0}")
+            
             if response.data:
                 model_data = response.data[0]
+                print(f"DEBUG: Model data found: {model_data}")
                 # Add the text session_id from the joined analysis_sessions table
                 if 'analysis_sessions' in model_data and model_data['analysis_sessions']:
                     model_data['text_session_id'] = model_data['analysis_sessions']['session_id']
+                    print(f"DEBUG: Added text_session_id: {model_data['text_session_id']}")
                 return model_data
+            
+            print(f"DEBUG: No model found in database")
             return None
         except Exception as e:
             print(f"Error getting model: {e}")
