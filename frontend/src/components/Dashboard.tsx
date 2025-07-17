@@ -86,51 +86,53 @@ const Dashboard: React.FC = () => {
     <div className="space-y-8">
       {/* Progress Steps */}
       <div className="card">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
           <h2 className="text-2xl font-bold text-gray-900">AI Data Analysis Pipeline</h2>
           <button
             onClick={resetApp}
-            className="btn-secondary text-sm"
+            className="btn-secondary text-sm self-start sm:self-auto"
           >
             Start Over
           </button>
         </div>
         
-        <div className="flex items-center justify-between">
-          {steps.map((step, index) => {
-            const StepIcon = step.icon;
-            const isActive = step.id === appState.currentStep;
-            const isCompleted = index < currentStepIndex;
-            
-            return (
-              <div key={step.id} className="flex items-center">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`
-                      w-12 h-12 rounded-full flex items-center justify-center border-2 transition-colors
-                      ${isActive 
-                        ? 'bg-primary-600 border-primary-600 text-white' 
-                        : isCompleted 
-                        ? 'bg-green-100 border-green-500 text-green-600'
-                        : 'bg-gray-100 border-gray-300 text-gray-400'
-                      }
-                    `}
-                  >
-                    <StepIcon className="w-6 h-6" />
+        <div className="overflow-x-auto">
+          <div className="flex items-center justify-between min-w-max">
+            {steps.map((step, index) => {
+              const StepIcon = step.icon;
+              const isActive = step.id === appState.currentStep;
+              const isCompleted = index < currentStepIndex;
+              
+              return (
+                <div key={step.id} className="flex items-center">
+                  <div className="flex flex-col items-center min-w-[80px]">
+                    <div
+                      className={`
+                        w-12 h-12 rounded-full flex items-center justify-center border-2 transition-colors flex-shrink-0
+                        ${isActive 
+                          ? 'bg-primary-600 border-primary-600 text-white' 
+                          : isCompleted 
+                          ? 'bg-green-100 border-green-500 text-green-600'
+                          : 'bg-gray-100 border-gray-300 text-gray-400'
+                        }
+                      `}
+                    >
+                      <StepIcon className="w-6 h-6" />
+                    </div>
+                    <div className="mt-2 text-center">
+                      <p className={`text-sm font-medium ${isActive ? 'text-primary-600' : 'text-gray-500'}`}>
+                        {step.name}
+                      </p>
+                      <p className="text-xs text-gray-400 hidden sm:block">{step.description}</p>
+                    </div>
                   </div>
-                  <div className="mt-2 text-center">
-                    <p className={`text-sm font-medium ${isActive ? 'text-primary-600' : 'text-gray-500'}`}>
-                      {step.name}
-                    </p>
-                    <p className="text-xs text-gray-400">{step.description}</p>
-                  </div>
+                  {index < steps.length - 1 && (
+                    <div className={`w-16 h-0.5 mx-4 flex-shrink-0 ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}`} />
+                  )}
                 </div>
-                {index < steps.length - 1 && (
-                  <div className={`w-16 h-0.5 mx-4 ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}`} />
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 
