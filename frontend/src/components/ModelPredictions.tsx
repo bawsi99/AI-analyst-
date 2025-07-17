@@ -429,8 +429,8 @@ const ModelPredictions: React.FC = () => {
                               });
                               
                               return Array.from(groupedFeatures.values()).map((feature) => (
-                                <div key={feature.name} className="flex-1 min-w-[200px]">
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <div key={feature.name} className="flex-1 min-w-[280px]">
+                                  <label className="block text-sm font-medium text-gray-700 mb-1 break-words">
                                     {feature.display_name || feature.name}
                                     <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
                                       feature.dtype === 'numerical' ? 'bg-blue-100 text-blue-800' :
