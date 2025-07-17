@@ -245,28 +245,50 @@ async def debug_user_info(
 
 def infer_feature_schema_from_importance(feature_importance: dict) -> list:
     """
-    Given a feature_importance dict, return a schema list where each feature (including one-hot encoded) is its own entry.
+    Group one-hot encoded features by their base name (before last underscore),
+    and collect all unique suffixes as options. E.g., 'streaming_movies_Yes' and 'streaming_movies_No'
+    become one feature 'streaming_movies' with options ['Yes', 'No'].
+    Features without an underscore or not matching this pattern are treated as individual features.
     """
-    schema = []
+    from collections import defaultdict
+    grouped = defaultdict(set)
+    used = set()
     for feature_name in feature_importance.keys():
-        # Heuristic: if feature name contains _ and the suffix is a known category (e.g., Yes/No), treat as categorical
-        if '_' in feature_name and not feature_name.replace('_', '').replace('.', '').isdigit():
-            dtype = 'categorical'
-            sample_values = [feature_name.split('_', 1)[1]]  # e.g., 'movies_Yes' -> ['Yes']
-        else:
-            dtype = 'numerical'
-            sample_values = []
+        if '_' in feature_name:
+            parts = feature_name.rsplit('_', 1)
+            if len(parts) == 2 and parts[1] not in ('', 'nan', 'none', 'null'):
+                base, option = parts
+                grouped[base].add(option)
+                used.add(feature_name)
+    
+    schema = []
+    # Add grouped one-hot features
+    for base, options in grouped.items():
         schema.append({
-            'name': feature_name,
-            'display_name': feature_name,
-            'dtype': dtype,
+            'name': base,
+            'display_name': base,
+            'dtype': 'categorical',
             'null_count': 0,
             'null_percentage': 0.0,
-            'unique_count': len(sample_values) if sample_values else 0,
+            'unique_count': len(options),
             'is_constant': False,
             'is_high_cardinality': False,
-            'sample_values': sample_values
+            'sample_values': sorted(list(options))
         })
+    # Add features not part of any group
+    for feature_name in feature_importance.keys():
+        if feature_name not in used:
+            schema.append({
+                'name': feature_name,
+                'display_name': feature_name,
+                'dtype': 'numerical',
+                'null_count': 0,
+                'null_percentage': 0.0,
+                'unique_count': 0,
+                'is_constant': False,
+                'is_high_cardinality': False,
+                'sample_values': []
+            })
     return schema
 
 @router.get("/models/{model_id}/features")
