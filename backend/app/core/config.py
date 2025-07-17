@@ -16,6 +16,8 @@ class Settings(BaseSettings):
         "http://127.0.0.1:8080",
         "http://localhost:3001",
         "http://127.0.0.1:3001",
+        "https://orthoaiassgnment-phi.vercel.app",  # Vercel frontend
+        "https://orthoaiassgnment.vercel.app",      # Alternative Vercel domain
         "*"  # Allow all origins for development
     ]
     

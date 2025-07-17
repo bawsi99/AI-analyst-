@@ -41,16 +41,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://orthoaiassgnment.vercel.app",
-        "https://orthoaiassgnment-git-main-aaryan-manawats-projects.vercel.app",
-        "https://orthoaiassgnment-ezjyoxl4s-aaryan-manawats-projects.vercel.app",
-        "https://orthoaiassgnment-3osm.vercel.app",
-        "https://orthoaiassgnment-3osm-git-main-aaryan-manawats-projects.vercel.app",
-        "https://orthoaiassgnment-3osm-hb729wy34-aaryan-manawats-projects.vercel.app",
-        "http://localhost:3000",  # For local development
-        "http://localhost:3001",  # For local development
-    ],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -82,6 +73,15 @@ async def health_check():
         "status": "healthy" if redis_healthy else "degraded",
         "service": "ai-analyst-api",
         "redis": "healthy" if redis_healthy else "unhealthy"
+    }
+
+@app.get("/cors-test")
+async def cors_test():
+    """Test endpoint to verify CORS is working"""
+    return {
+        "message": "CORS test successful",
+        "cors_origins": settings.CORS_ORIGINS,
+        "timestamp": "2024-01-01T00:00:00Z"
     }
 
 if __name__ == "__main__":
