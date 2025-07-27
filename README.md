@@ -416,6 +416,4 @@ For support and questions:
 - Check the logs for error details
 - Monitor the Flower dashboard for task status
 
-##TIME
-10-11 hours 
 
